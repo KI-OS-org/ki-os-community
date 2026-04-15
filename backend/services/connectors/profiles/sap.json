@@ -1,0 +1,26 @@
+{
+  "profileId": "sap",
+  "tier": "enterprise",
+  "name": "SAP S/4HANA",
+  "category": "erp",
+  "protocol": "mcp",
+  "trustLevel": "high",
+  "authType": "bearer",
+  "capabilities": ["erp.read", "erp.write", "erp.orders", "erp.inventory", "erp.finance"],
+  "webhookPattern": "https://{host}/api/v1/webhook/{event}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {token}",
+    "sap-client": "{client}"
+  },
+  "events": ["order.created", "order.updated", "inventory.changed", "invoice.posted"],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "eventType": { "type": "string" },
+      "payload": { "type": "object" },
+      "timestamp": { "type": "string", "format": "date-time" }
+    }
+  },
+  "docs": "https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/webhooks"
+}

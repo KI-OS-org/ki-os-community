@@ -1,0 +1,41 @@
+KI-OS Community Edition — Strategic Components
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
+
+Copyright (C) 2026 Ingo Schaffer — https://ki-os.org
+
+IMPORTANT ADDITIONAL CONDITION (AGPL §7):
+  Any use of these components as a network-accessible service (SaaS, API,
+  hosted platform) requires publishing all modifications under AGPL-3.0.
+  Attribution "Based on KI-OS by Ingo Schaffer (ki-os.org)" must appear
+  in any user-facing interface or documentation.
+
+SPDX-License-Identifier: AGPL-3.0-only
+
+Full license text: https://www.gnu.org/licenses/agpl-3.0.html
+
+---
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+Key provisions relevant to KI-OS:
+
+§ 13 — Remote Network Interaction:
+  Notwithstanding any other provision of this License, if you modify the
+  Program, your modified version must prominently offer all users
+  interacting with it remotely through a computer network an opportunity
+  to receive the Corresponding Source of your version.
+
+This means: If you deploy a modified version of KI-OS strategic components
+as a web service, API, or cloud application — you MUST make your source
+code available to all users of that service.
+
+Contact for commercial licensing (to avoid AGPL obligations):
+  enterprise@ki-os.org

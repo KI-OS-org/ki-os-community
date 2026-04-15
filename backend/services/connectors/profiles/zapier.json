@@ -1,0 +1,28 @@
+{
+  "profileId": "zapier",
+  "tier": "community",
+  "name": "Zapier",
+  "category": "automation",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "none",
+  "capabilities": ["automation.trigger", "automation.receive", "workflow.execute"],
+  "webhookPattern": "https://hooks.zapier.com/hooks/catch/{userId}/{hookId}/",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "events": [
+    "zap.triggered", "zap.completed", "zap.failed"
+  ],
+  "payloadSchema": {
+    "type": "object",
+    "description": "Beliebige JSON-Daten — Zapier mappt Felder im Zap-Editor",
+    "properties": {
+      "event": { "type": "string" },
+      "data":  { "type": "object" },
+      "timestamp": { "type": "string", "format": "date-time" }
+    }
+  },
+  "notes": "Zapier Webhook-URLs (Catch Hook) benötigen keine Authentifizierung. URL wird im Zap-Editor unter 'Webhooks by Zapier > Catch Hook' generiert.",
+  "docs": "https://zapier.com/apps/webhook/integrations"
+}

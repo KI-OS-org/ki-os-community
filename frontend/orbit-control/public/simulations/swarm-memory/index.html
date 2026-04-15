@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KI-OS Swarm Memory</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; overflow: hidden; font-family: 'Courier New', monospace; }
+    canvas { display: block; }
+    #stats-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 8px 16px;
+      background: rgba(0,0,0,0.7);
+      border-top: 1px solid #1a1a2e;
+      display: flex; gap: 24px; align-items: center;
+      font-size: 12px; color: #888;
+    }
+    #stats-bar span { color: #5AC4FF; }
+    #label {
+      position: fixed; top: 16px; left: 16px;
+      font-size: 13px; letter-spacing: 3px;
+      color: #5AC4FF; opacity: 0.8;
+    }
+    #tooltip {
+      position: fixed; display: none;
+      background: rgba(10,10,20,0.95);
+      border: 1px solid #5AC4FF44;
+      border-radius: 6px; padding: 8px 12px;
+      font-size: 11px; color: #ccc;
+      max-width: 220px; pointer-events: none;
+      z-index: 100; line-height: 1.5;
+    }
+    #tooltip .conf { color: #5AC4FF; font-weight: bold; }
+    #no-data {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      color: #5AC4FF; font-size: 14px; letter-spacing: 2px;
+      opacity: 0.6; display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="label">SWARM MEMORY</div>
+  <div id="no-data">Warte auf Swarm Memory Daten...</div>
+  <canvas id="canvas"></canvas>
+  <div id="tooltip"></div>
+  <div id="stats-bar">
+    <div>Einträge: <span id="s-total">—</span></div>
+    <div>Ø Confidence: <span id="s-conf">—</span></div>
+    <div>Decay λ: <span id="s-decay">—</span></div>
+    <div>Ø Effektiv: <span id="s-eff">—</span></div>
+  </div>
+
+<script>
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const noData  = document.getElementById('no-data');
+
+let nodes = [];
+let rafId = null;
+let mouse = { x: -999, y: -999 };
+
+// ── Resize ──────────────────────────────────────────────────────────────────
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight - 32; // stats bar
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Color by effectiveConfidence ─────────────────────────────────────────────
+function nodeColor(ec) {
+  if (ec >= 0.7) return '#5AC4FF';
+  if (ec >= 0.4) return '#fbbf24';
+  return '#ef4444';
+}
+
+// ── Node class ───────────────────────────────────────────────────────────────
+class Node {
+  constructor(entry) {
+    this.update(entry);
+    this.x  = Math.random() * canvas.width;
+    this.y  = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.phase = Math.random() * Math.PI * 2;
+  }
+  update(entry) {
+    this.id   = entry.id;
+    this.text = entry.text || '';
+    this.conf = entry.confidence || 0.7;
+    this.ec   = entry.effectiveConfidence ?? entry.confidence ?? 0.7;
+    this.usage = entry.usageCount || 0;
+    this.type  = entry.metadata?.type || 'pattern';
+    this.color = nodeColor(this.ec);
+    this.r    = 8 + this.ec * 20;
+  }
+  tick(t) {
+    // gentle float
+    this.x += this.vx;
+    this.y += this.vy;
+    // bounce with margin
+    const m = this.r + 4;
+    if (this.x < m)                  { this.x = m;                  this.vx = Math.abs(this.vx); }
+    if (this.x > canvas.width - m)   { this.x = canvas.width - m;   this.vx = -Math.abs(this.vx); }
+    if (this.y < m)                  { this.y = m;                   this.vy = Math.abs(this.vy); }
+    if (this.y > canvas.height - m)  { this.y = canvas.height - m;  this.vy = -Math.abs(this.vy); }
+    // pulse
+    this.pulse = 0.6 + 0.4 * Math.sin(t * 0.002 * (0.5 + this.ec) + this.phase);
+  }
+  draw() {
+    const r   = this.r;
+    const col = this.color;
+    // glow
+    const grd = ctx.createRadialGradient(this.x, this.y, r * 0.2, this.x, this.y, r * 2.2);
+    grd.addColorStop(0, col + Math.round(this.pulse * 99).toString(16).padStart(2,'0'));
+    grd.addColorStop(1, col + '00');
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r * 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+    // core
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = col + 'cc';
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  hovered() {
+    const dx = mouse.x - this.x;
+    const dy = mouse.y - this.y;
+    return dx*dx + dy*dy <= this.r * this.r;
+  }
+}
+
+// ── Update nodes from data ────────────────────────────────────────────────────
+function applyEntries(entries) {
+  const map = new Map(nodes.map(n => [n.id, n]));
+  const next = [];
+  for (const e of entries) {
+    const existing = map.get(e.id);
+    if (existing) { existing.update(e); next.push(existing); }
+    else           { next.push(new Node(e)); }
+  }
+  nodes = next;
+  noData.style.display = nodes.length ? 'none' : 'block';
+}
+
+// ── Draw connections ──────────────────────────────────────────────────────────
+function drawConnections() {
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].type !== nodes[j].type) continue;
+      const dx   = nodes[j].x - nodes[i].x;
+      const dy   = nodes[j].y - nodes[i].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 220) continue;
+      const alpha = ((1 - dist / 220) * (nodes[i].ec + nodes[j].ec) / 2 * 0.35).toFixed(2);
+      ctx.beginPath();
+      ctx.moveTo(nodes[i].x, nodes[i].y);
+      ctx.lineTo(nodes[j].x, nodes[j].y);
+      ctx.strokeStyle = `rgba(90,196,255,${alpha})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+  }
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - rect.left;
+  mouse.y = e.clientY - rect.top;
+
+  const hovered = nodes.find(n => n.hovered());
+  if (hovered) {
+    const label = hovered.text.length > 60 ? hovered.text.slice(0,57) + '…' : hovered.text;
+    tooltip.innerHTML =
+      `<div>${label}</div>
+       <div>Conf: <span class="conf">${hovered.conf.toFixed(3)}</span> / Eff: <span class="conf">${hovered.ec.toFixed(3)}</span></div>
+       <div>Typ: ${hovered.type} · Nutzung: ${hovered.usage}×</div>`;
+
+    // clamp to viewport
+    const tw = 240, th = 80;
+    const tx = Math.min(e.clientX + 12, window.innerWidth - tw - 8);
+    const ty = Math.min(e.clientY - 8, window.innerHeight - th - 40);
+    tooltip.style.left    = tx + 'px';
+    tooltip.style.top     = ty + 'px';
+    tooltip.style.display = 'block';
+    canvas.style.cursor   = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    canvas.style.cursor   = 'default';
+  }
+});
+canvas.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+  mouse.x = mouse.y = -999;
+});
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+function loop(t) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (nodes.length === 0) {
+    rafId = requestAnimationFrame(loop);
+    return;
+  }
+
+  drawConnections();
+  for (const n of nodes) { n.tick(t); n.draw(); }
+
+  rafId = requestAnimationFrame(loop);
+}
+rafId = requestAnimationFrame(loop);
+
+// ── postMessage ───────────────────────────────────────────────────────────────
+window.addEventListener('message', e => {
+  // Accept same origin or parent origin only
+  if (e.origin !== window.location.origin &&
+      e.origin !== 'null' &&
+      !e.origin.includes('localhost') &&
+      !e.origin.includes('ki-os.org')) return;
+
+  const { type, entries, stats } = e.data || {};
+  if (type !== 'swarm-update') return;
+
+  if (Array.isArray(entries)) applyEntries(entries);
+
+  if (stats) {
+    document.getElementById('s-total').textContent = stats.total ?? '—';
+    document.getElementById('s-conf').textContent  = stats.avgConfidence != null
+      ? (stats.avgConfidence * 100).toFixed(1) + '%' : '—';
+    document.getElementById('s-eff').textContent   = stats.avgEffectiveConfidence != null
+      ? (stats.avgEffectiveConfidence * 100).toFixed(1) + '%' : '—';
+    document.getElementById('s-decay').textContent = stats.decayLambda ?? '—';
+  }
+});
+
+// ── Cleanup ───────────────────────────────────────────────────────────────────
+window.addEventListener('beforeunload', () => {
+  if (rafId) cancelAnimationFrame(rafId);
+});
+</script>
+</body>
+</html>

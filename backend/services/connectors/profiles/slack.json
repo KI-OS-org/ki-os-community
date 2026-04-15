@@ -1,0 +1,27 @@
+{
+  "profileId": "slack",
+  "tier": "enterprise",
+  "name": "Slack",
+  "category": "communication",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "bearer",
+  "capabilities": ["msg.send", "msg.receive", "channel.post", "file.upload"],
+  "webhookPattern": "https://hooks.slack.com/services/{T}/{B}/{token}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {botToken}"
+  },
+  "events": ["message", "app_mention", "reaction_added", "channel_created", "file_shared"],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "text": { "type": "string" },
+      "channel": { "type": "string" },
+      "username": { "type": "string" },
+      "icon_emoji": { "type": "string" },
+      "blocks": { "type": "array" }
+    }
+  },
+  "docs": "https://api.slack.com/messaging/webhooks"
+}

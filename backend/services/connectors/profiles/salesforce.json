@@ -1,0 +1,26 @@
+{
+  "profileId": "salesforce",
+  "tier": "enterprise",
+  "name": "Salesforce",
+  "category": "crm",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "bearer",
+  "capabilities": ["crm.contacts", "crm.leads", "crm.opportunities", "crm.accounts", "crm.cases"],
+  "webhookPattern": "https://{orgDomain}/services/data/{apiVersion}/webhook",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {accessToken}"
+  },
+  "events": ["lead.created", "opportunity.won", "contact.updated", "case.opened"],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "sObjectType": { "type": "string" },
+      "recordId": { "type": "string" },
+      "changeType": { "type": "string", "enum": ["CREATE", "UPDATE", "DELETE"] },
+      "fields": { "type": "object" }
+    }
+  },
+  "docs": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/webhooks.htm"
+}

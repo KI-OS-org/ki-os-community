@@ -1,0 +1,221 @@
+@import "tailwindcss";
+
+/* ── KI-OS Agentmesh23 Design System ─────────────────────────────────────── */
+
+/* LIGHT MODE (default) */
+:root {
+  --background:       #f0f4ff;
+  --background-2:     #e8edf8;
+  --background-3:     #dde4f4;
+
+  --foreground:       #0d1126;
+  --muted-foreground: rgba(60, 80, 130, 0.75);
+
+  --card:             rgba(255, 255, 255, 0.85);
+  --card-foreground:  #0d1126;
+  --surface:          rgba(0, 0, 0, 0.04);
+  --surface-hover:    rgba(0, 0, 0, 0.07);
+
+  --border:           rgba(100, 120, 200, 0.18);
+  --border-accent:    rgba(10, 160, 220, 0.28);
+  --border-hover:     rgba(10, 160, 220, 0.50);
+
+  /* Cyan primary */
+  --accent:           #0a9fd8;
+  --accent-dim:       rgba(10, 159, 216, 0.12);
+  --accent-glow:      rgba(10, 159, 216, 0.25);
+  --accent-foreground: #ffffff;
+
+  --accent-blue:      #2563eb;
+  --accent-purple:    #7c3aed;
+  --accent-green:     #16a34a;
+  --accent-orange:    #ea580c;
+  --accent-red:       #dc2626;
+
+  --ring:             rgba(10, 159, 216, 0.50);
+
+  --status-green:     #16a34a;
+  --status-yellow:    #ca8a04;
+  --status-red:       #dc2626;
+  --status-blue:      #0a9fd8;
+}
+
+/* DARK MODE */
+html.dark {
+  --background:       #050816;
+  --background-2:     #07091a;
+  --background-3:     #0b0e22;
+
+  --foreground:       #f5f7ff;
+  --muted-foreground: rgba(169, 183, 230, 0.80);
+
+  --card:             rgba(8, 12, 30, 0.70);
+  --card-foreground:  #f5f7ff;
+  --surface:          rgba(255, 255, 255, 0.04);
+  --surface-hover:    rgba(255, 255, 255, 0.07);
+
+  --border:           rgba(148, 163, 255, 0.12);
+  --border-accent:    rgba(90, 196, 255, 0.20);
+  --border-hover:     rgba(90, 196, 255, 0.40);
+
+  --accent:           #5ac4ff;
+  --accent-dim:       rgba(90, 196, 255, 0.15);
+  --accent-glow:      rgba(90, 196, 255, 0.30);
+  --accent-foreground: #ffffff;
+
+  --accent-blue:      #4a8dff;
+  --accent-purple:    #a78bfa;
+  --accent-green:     #22c55e;
+  --accent-orange:    #fb923c;
+  --accent-red:       #f87171;
+
+  --ring:             rgba(90, 196, 255, 0.55);
+
+  --status-green:     #22c55e;
+  --status-yellow:    #eab308;
+  --status-red:       #f87171;
+  --status-blue:      #5ac4ff;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(10, 159, 216, 0.07), transparent),
+    radial-gradient(ellipse 50% 35% at 85% 60%, rgba(37, 99, 235, 0.04), transparent);
+  color: var(--foreground);
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+html.dark body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(90, 196, 255, 0.09), transparent),
+    radial-gradient(ellipse 50% 35% at 85% 60%, rgba(74, 141, 255, 0.05), transparent);
+}
+
+a { color: inherit; text-decoration: none; }
+
+code, pre, kbd {
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(90, 196, 255, 0.18);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(90, 196, 255, 0.38); }
+
+/* ── Glass card ────────────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(10, 159, 216, 0.18);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.glass-card:hover {
+  border-color: rgba(10, 159, 216, 0.38);
+  box-shadow: 0 0 28px rgba(10, 159, 216, 0.10), 0 8px 32px rgba(0, 0, 0, 0.10);
+  transform: translateY(-3px);
+}
+html.dark .glass-card {
+  background: rgba(8, 12, 30, 0.72);
+  border-color: rgba(90, 196, 255, 0.14);
+}
+html.dark .glass-card:hover {
+  border-color: rgba(90, 196, 255, 0.32);
+  box-shadow: 0 0 28px rgba(90, 196, 255, 0.10), 0 8px 32px rgba(0, 0, 0, 0.40);
+}
+
+/* ── Pill badge ────────────────────────────────────────────────────────────── */
+.pill-cyan {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(90, 196, 255, 0.10);
+  border: 1px solid rgba(90, 196, 255, 0.22);
+  border-radius: 999px;
+  color: #5ac4ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ── Agent ring (Agentmesh grid) ───────────────────────────────────────────── */
+.agent-ring {
+  border-radius: 50%;
+  border: 2px solid rgba(90, 196, 255, 0.60);
+  box-shadow: 0 0 14px rgba(90, 196, 255, 0.28);
+}
+
+/* ── Status dot ────────────────────────────────────────────────────────────── */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.green  { background: var(--status-green);  box-shadow: 0 0 6px var(--status-green); }
+.status-dot.yellow { background: var(--status-yellow); box-shadow: 0 0 6px var(--status-yellow); }
+.status-dot.red    { background: var(--status-red);    box-shadow: 0 0 6px var(--status-red); }
+.status-dot.blue   { background: var(--status-blue);   box-shadow: 0 0 6px var(--status-blue); }
+
+/* ── Shimmer divider ───────────────────────────────────────────────────────── */
+.shimmer-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(90,196,255,0.40), rgba(90,196,255,0.40), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+.ki-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.ki-table th {
+  text-align: left; padding: 8px 12px;
+  color: var(--muted-foreground); font-weight: 600;
+  font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.ki-table td { padding: 10px 12px; border-bottom: 1px solid rgba(148,163,255,0.06); }
+.ki-table tr:hover td { background: rgba(90,196,255,0.04); }
+
+/* ── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(90,196,255,0.28); }
+  50%       { box-shadow: 0 0 22px rgba(90,196,255,0.65); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-scale {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in       { animation: fade-in 0.45s cubic-bezier(.16,1,.3,1) both; }
+.animate-fade-in-scale { animation: fade-in-scale 0.40s cubic-bezier(.16,1,.3,1) both; }
+.animate-pulse-glow    { animation: pulse-glow 2.5s ease-in-out infinite; }
+
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+.delay-5 { animation-delay: 0.40s; }

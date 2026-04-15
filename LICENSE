@@ -1,0 +1,126 @@
+KI-OS Blueprint — Licensing Model
+====================================
+Copyright (C) 2026 Ingo Schaffer — https://ki-os.org
+Contact: legal@ki-os.org
+
+KI-OS verwendet ein gestaffeltes Lizenzmodell ("Blueprint Licensing"):
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│  TIER 1 — CORE                          Apache License 2.0              │
+│  Infrastruktur, Utilities, Adapter                                       │
+│  → Frei nutzbar, auch in kommerziellen Produkten                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│  TIER 2 — STRATEGIC COMPONENTS          AGPL-3.0                        │
+│  Agent-Engine, Governance, Privacy-Guard, AgentMesh                     │
+│  → Open Source — Änderungen müssen veröffentlicht werden                │
+│    wenn als Netzwerk-Service betrieben                                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│  TIER 3 — ENTERPRISE                    Commercial License              │
+│  DAG Studio, Multi-Tenancy, PKI, State Fabric,                          │
+│  Retail-Vertical, Federation, Economic Optimization                     │
+│  → Separate kommerzielle Lizenz erforderlich                            │
+│  Kontakt: enterprise@ki-os.org                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  TIER 4 — CLOUD / SAAS                  Proprietary                     │
+│  KI-OS Cloud — das vollständige gehostete Produkt                       │
+│  → Nutzung nur über ki-os.org                                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+TIER 1 — CORE INFRASTRUCTURE
+==============================
+Lizenz: Apache License 2.0
+Volltext: siehe LICENSE-APACHE in diesem Verzeichnis
+SPDX-Identifier: Apache-2.0
+
+Folgende Komponenten sind unter Apache 2.0 lizenziert:
+
+  backend/services/core/         Logger, Observability, Rate-Limiting, OTel
+  backend/services/memory/       Memory-Adapter (File, SQLite, In-Memory)
+  backend/services/connectors/   Connector-Adapter, MCP-Protokoll
+  backend/services/providers/    LLM-Provider-Adapter (OpenAI, Anthropic, ...)
+  backend/services/routing/      Intent-Router, Dynamic Routing
+  backend/services/files/        File-Handling, File-Fabric
+  backend/services/security/     Security-Filter (Basis)
+  backend/services/domain/       Domain-Definitionen, Domain-Router
+  backend/services/mesh/         Mesh-Utilities (Style, Task-Framing)
+
+Erlaubt: Freie Nutzung, Modifikation, Distribution, kommerzielle Nutzung.
+Bedingung: Copyright-Hinweis und Lizenz-Kopie beibehalten.
+
+
+TIER 2 — STRATEGIC COMPONENTS
+================================
+Lizenz: GNU Affero General Public License v3.0
+Volltext: siehe LICENSE-AGPL in diesem Verzeichnis
+SPDX-Identifier: AGPL-3.0-only
+
+Folgende Komponenten sind unter AGPL-3.0 lizenziert:
+
+  backend/services/agent/        Execution-Engine, Planning, Agent-Registry
+  backend/services/agentmesh/    Multi-Agent-Mesh, Mesh-Runtime
+  backend/services/governance/   Policy-Engine, Approvals, Policy-Registry
+  backend/services/privacy/      Privacy-Guard, PII-Detection
+  backend/services/supervisor/   Supervisor, Self-Healing
+  backend/services/simulations/  Simulations-Engine
+  runtime/local/server.js        Local Runtime Server
+  core/app.js (Community)        HTTP-Router (Community Edition)
+
+Erlaubt: Nutzung, Modifikation, Distribution.
+Bedingung: Wer diese Komponenten als Netzwerk-Service betreibt (SaaS, API,
+Cloud-Deployment), MUSS den vollständigen Quellcode aller Modifikationen
+unter AGPL-3.0 veröffentlichen. Das schließt den Netzwerk-Betrieb als
+"Veröffentlichung" ein (AGPL §13).
+
+Attribution: Jede Nutzung muss sichtbar enthalten:
+  "Basiert auf KI-OS von Ingo Schaffer (ki-os.org)"
+
+
+TIER 3 — ENTERPRISE EDITION
+=============================
+Lizenz: Kommerziell / Proprietär
+
+Folgende Komponenten sind NICHT Open Source:
+
+  backend/services/dag/          DAG Studio & Execution Engine
+  backend/services/tenant/       Multi-Tenancy & Tenant-Isolation
+  backend/services/pki/          PKI-Infrastruktur & Certificate Management
+  backend/services/state/        State Fabric (Enterprise Backends)
+  backend/services/workspace/    Advanced Workspace & Whiteboard
+  backend/services/resilience/   Circuit Breaker & DLQ (Enterprise)
+  backend/services/retail/       Retail-Vertical
+  backend/services/retail-brain/ Retail Brain & Ontologie
+  backend/services/federation/   Federated Outcome Network
+  backend/services/economic/     Economic Self-Optimization
+  backend/services/desktop/      Desktop Observation
+  backend/services/packs/        Pack-Marketplace
+  frontend/orbit-control/        Enterprise Control Plane (Next.js)
+
+In der Community Edition sind diese durch Stubs ersetzt.
+Lizenz-Anfragen: enterprise@ki-os.org
+
+
+TIER 4 — CLOUD / SAAS
+========================
+Die KI-OS Cloud-Plattform (ki-os.org) enthält alle vier Tiers und ist
+ein vollständig proprietäres Produkt. Die Nutzung erfolgt ausschließlich
+über die von Ingo Schaffer betriebene Infrastruktur.
+
+
+ATTRIBUTION
+============
+Bei jeder Nutzung von Tier-1 oder Tier-2 Komponenten:
+
+  Autor: Ingo Schaffer
+  Produkt: KI-OS — https://ki-os.org
+  Kontakt: legal@ki-os.org
+
+
+COMMUNITY EDITION ZUSATZBEDINGUNGEN
+=====================================
+Die Community Edition (dieses Paket) unterliegt zusätzlich:
+
+1. Nur lokaler Betrieb (localhost) — kein Cloud-Deployment
+2. Maximum 3 gleichzeitige Agents
+3. Single-Tenant-Betrieb
+4. Kein Reselling oder White-Labeling ohne Enterprise-Lizenz

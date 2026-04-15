@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgentMesh Simulation — KI-OS Original</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050816; --bg2:#07091a; --bg3:#0b0e22; --surface:#0f1228;
+  --border: rgba(148,163,255,0.12); --border2: rgba(148,163,255,0.20);
+  --text:#f5f7ff; --text2:#a9b7e6; --muted:#6874a0;
+  --accent:#5ac4ff; --accent2:#4a8dff; --teal:#5ac4ff; --green:#22c55e;
+  --red:#fb7185; --orange:#fb923c; --amber:#fbbf24; --yellow:#fbbf24;
+  --royal:#1b2a5a; --font:'Plus Jakarta Sans',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+* { box-sizing:border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--font); }
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79,142,247,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 90%, rgba(90,196,255,0.08) 0%, transparent 55%),
+    var(--bg);
+}
+.page { max-width: 1440px; margin: 0 auto; padding: 28px 28px 56px; }
+.header { margin-bottom: 22px; }
+.eyebrow { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; border:1px solid rgba(90,196,255,0.28); background:rgba(90,196,255,0.08); color:var(--accent); font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px rgba(90,196,255,.7); }
+h1 { margin:14px 0 8px; font-size:38px; line-height:1.08; letter-spacing:-1.2px; }
+.lead { margin:0 0 20px; color:var(--text2); font-size:16px; max-width:900px; }
+.reveal, .reveal.visible { opacity:1 !important; transform:none !important; }
+.footer-note { margin-top:18px; font-size:12px; color:var(--muted); font-family:var(--mono); }
+@media (max-width: 900px) { .page { padding:16px 14px 40px; } h1 { font-size:28px; } .lead { font-size:14px; } }
+
+
+/* iPhone / iOS Safari: SVG <foreignObject><video> shifts visually on mobile.
+   Keep the layout clean by falling back to the native neon circles there. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 820px){
+    #ov-svg, #amesh-svg { overflow:hidden !important; }
+    #ov-svg foreignObject video.lazy-video,
+    #amesh-svg foreignObject video.lazy-video{
+      object-position:center center !important;
+      transform:none !important;
+      -webkit-transform:translateZ(0) !important;
+      backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
+    }
+    #ov-svg foreignObject,
+    #amesh-svg foreignObject{
+      display:none !important;
+      opacity:0 !important;
+      visibility:hidden !important;
+      pointer-events:none !important;
+    }
+  }
+}
+
+
+/* Premium iPhone fix: replace SVG foreignObject MP4s with HTML overlay layers on iOS Safari */
+.svg-stage{position:relative;display:block}
+.svg-stage > svg{position:relative;z-index:1}
+.svg-stage > canvas{z-index:0}
+.ios-video-overlay{display:none;position:absolute;inset:0;pointer-events:none;z-index:3}
+.ios-video-overlay .svg-video-node{position:absolute;overflow:hidden;border-radius:50%;background:#050816;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.ios-video-overlay .svg-video-node video{width:100%;height:100%;display:block;object-fit:cover;object-position:center 10%;border-radius:50%;background:#050816}
+.ios-video-overlay .svg-video-node.supervisor-ring{box-shadow:0 0 0 2px rgba(251,146,60,.9),0 0 20px rgba(251,146,60,.18)}
+.ios-video-overlay .svg-video-node.kimba-ring{box-shadow:0 0 0 2.5px rgba(90,196,255,.95),0 0 28px rgba(90,196,255,.18)}
+.ios-video-overlay .svg-video-node.planner-ring{box-shadow:0 0 0 1.6px rgba(90,196,255,.85)}
+.ios-video-overlay .svg-video-node.memory-ring{box-shadow:0 0 0 1.6px rgba(74,141,255,.85)}
+.ios-video-overlay .svg-video-node.policy-ring{box-shadow:0 0 0 1.6px rgba(251,191,36,.85)}
+.ios-video-overlay .svg-video-node.research-ring{box-shadow:0 0 0 1.6px rgba(34,197,94,.85)}
+.ios-video-overlay .svg-video-node.execution-ring{box-shadow:0 0 0 1.6px rgba(251,146,60,.85)}
+.ios-video-overlay .svg-video-node.reviewer-ring{box-shadow:0 0 0 1.6px rgba(167,139,250,.85)}
+.ios-video-overlay .svg-video-node.synth-ring{box-shadow:0 0 0 2px rgba(90,196,255,.95),0 0 16px rgba(90,196,255,.14)}
+html.ios-safari.mobile-premium-fix #ov-svg foreignObject,
+html.ios-safari.mobile-premium-fix #amesh-svg foreignObject{visibility:hidden!important;opacity:0!important}
+html.ios-safari.mobile-premium-fix .ios-video-overlay{display:block}
+@media (max-width: 820px){
+  html.ios-safari.mobile-premium-fix .ios-video-overlay{display:block}
+}
+
+</style>
+
+<style id="agentmesh-mobile-fix-v2">
+@media (max-width: 900px){
+  html, body { -webkit-text-size-adjust:100%; overflow-x:hidden; }
+  .page { padding:16px 12px 34px !important; }
+  h1 { font-size:28px !important; line-height:1.08 !important; }
+  .lead { font-size:14px !important; line-height:1.55 !important; }
+
+  /* Stack top control/input areas */
+  div[style*="display:grid"][style*="grid-template-columns:1fr auto auto"]{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  textarea#amesh-input,
+  textarea#amesh-json-input{
+    min-height:120px !important;
+    font-size:14px !important;
+  }
+
+  /* Keep action buttons tappable */
+  button{
+    min-height:40px;
+  }
+
+  /* SVG stays readable without clipping */
+  #amesh-svg{
+    width:100% !important;
+    height:auto !important;
+    display:block;
+  }
+
+  /* Any inline multi-column blocks become single column */
+  div[style*="display:grid"][style*="grid-template-columns"]{
+    grid-template-columns:1fr !important;
+  }
+}
+
+
+/* iPhone / iOS Safari: SVG <foreignObject><video> shifts visually on mobile.
+   Keep the layout clean by falling back to the native neon circles there. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 820px){
+    #ov-svg, #amesh-svg { overflow:hidden !important; }
+    #ov-svg foreignObject video.lazy-video,
+    #amesh-svg foreignObject video.lazy-video{
+      object-position:center center !important;
+      transform:none !important;
+      -webkit-transform:translateZ(0) !important;
+      backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
+    }
+    #ov-svg foreignObject,
+    #amesh-svg foreignObject{
+      display:none !important;
+      opacity:0 !important;
+      visibility:hidden !important;
+      pointer-events:none !important;
+    }
+  }
+}
+
+</style>
+
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="eyebrow"><span class="dot"></span> KI-OS Original AgentMesh</div>
+      <h1>AgentMesh Simulation</h1>
+      <p class="lead">Originale AgentMesh-Grafik aus KI-OS inklusive Kugel-Animationen, Replay, Aufgaben-Simulation und JSON-Input. Der Motion-Layer wurde direkt aus der Originaldatei übernommen.</p>
+    </div>
+    <!-- VISUAL 3: AgentMesh — Story Flow mit Figuren -->
+    <div class="reveal reveal-delay-2">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <span style="width:24px;height:1px;background:var(--accent);display:inline-block"></span>
+        AgentMesh23 — Supervisor koordiniert · Agents arbeiten parallel · One Voice
+      </div>
+      <div id="amesh-wrap" style="background:linear-gradient(135deg,#030610,#060c1e);border:1px solid rgba(90,196,255,0.18);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.8);position:relative">
+
+        <!-- SVG STORY BOARD -->
+        <div class="svg-stage amesh-stage">
+        <canvas id="amesh-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.5"></canvas>
+        <svg id="amesh-svg" viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;font-family:system-ui,-apple-system,sans-serif">
+          <defs>
+            <filter id="af-glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="af-glow2"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <marker id="af-arr" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5ac4ff"/></marker>
+            <marker id="af-arr-r" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#fb923c"/></marker>
+            <marker id="af-arr-g" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#22c55e"/></marker>
+            <marker id="af-arr-p" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#a78bfa"/></marker>
+            <marker id="af-arr-y" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#fbbf24"/></marker>
+            <pattern id="af-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="rgba(90,196,255,0.03)" stroke-width="1"/></pattern>
+          </defs>
+
+          <!-- Background -->
+          <rect width="960" height="620" fill="url(#af-grid)"/>
+
+          <!-- ═══════════════════════════════════
+               ROW 0: INPUT TASK (top)
+          ═══════════════════════════════════ -->
+          <rect x="310" y="18" width="340" height="44" rx="12" fill="rgba(90,196,255,0.07)" stroke="rgba(90,196,255,0.35)" stroke-width="1.5" id="af-task-box"/>
+          <text id="af-task-label" x="480" y="37" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">AUFGABE</text>
+          <text id="af-task-text" x="480" y="53" text-anchor="middle" fill="#a9b7e6" font-size="11">„Erstelle Marktanalyse + Executive Briefing"</text>
+
+          <!-- Down arrow to supervisor -->
+          <line x1="480" y1="62" x2="480" y2="108" stroke="rgba(90,196,255,0.4)" stroke-width="2" marker-end="url(#af-arr)" id="af-arrow-task"/>
+
+          <!-- ═══════════════════════════════════
+               ROW 1: SUPERVISOR (center top)
+          ═══════════════════════════════════ -->
+          <!-- Supervisor figure -->
+                    <!-- AGENT: SUPERVISOR -->
+          <g id="af-sup" opacity="1">
+            <circle cx="480" cy="130" r="40" fill="rgba(251,146,60,0.06)" stroke="#fb923c" stroke-width="2"/>
+            <circle cx="480" cy="130" r="40" fill="none" stroke="#fb923c" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-supervisor"><circle cx="480" cy="130" r="34"/></clipPath></defs>
+            <foreignObject x="446" y="96" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="supervisor.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-supervisor"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="428" y="174" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#fb923c" stroke-width="1.5"/>
+            <text x="480" y="188" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700" font-family="system-ui">SUPERVISOR</text>
+            <text x="480" y="200" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">koordiniert</text>
+          </g>
+
+
+          <!-- Pulse ring on supervisor -->
+          <circle cx="480" cy="136" r="18" fill="none" stroke="rgba(251,146,60,0.5)" stroke-width="2">
+            <animate attributeName="r" values="18;30;18" dur="2.8s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.6;0;0.6" dur="2.8s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- SUPERVISOR SPEECH BUBBLE -->
+          <g id="af-sup-bubble" opacity="0">
+            <rect x="510" y="118" width="200" height="52" rx="10" fill="rgba(251,146,60,0.1)" stroke="rgba(251,146,60,0.5)" stroke-width="1.5"/>
+            <polygon points="510,144 496,152 510,158" fill="rgba(251,146,60,0.1)" stroke="rgba(251,146,60,0.5)" stroke-width="1"/>
+            <text x="610" y="136" text-anchor="middle" fill="#fb923c" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace">SUPERVISOR sagt:</text>
+            <text id="af-sup-text1" x="610" y="150" text-anchor="middle" fill="#e8ecff" font-size="10">Dispatch an alle Agents!</text>
+            <text id="af-sup-text2" x="610" y="163" text-anchor="middle" fill="#a9b7e6" font-size="9.5">Planner → Research → Execution</text>
+          </g>
+
+          <!-- ═══════════════════════════════════
+               ARROWS from Supervisor to 5 agents
+          ═══════════════════════════════════ -->
+          <!-- to Planner (left-far) -->
+          <line id="af-line-plan" x1="462" y1="188" x2="128" y2="298" stroke="rgba(90,196,255,0.0)" stroke-width="2" stroke-dasharray="6,4"/>
+          <!-- to Research (left-mid) -->
+          <line id="af-line-res" x1="468" y1="192" x2="248" y2="298" stroke="rgba(34,197,94,0.0)" stroke-width="2" stroke-dasharray="6,4"/>
+          <!-- to Memory (center) -->
+          <line id="af-line-mem" x1="480" y1="244" x2="480" y2="298" stroke="rgba(74,141,255,0.0)" stroke-width="2" stroke-dasharray="6,4"/>
+          <!-- to Execution (right-mid) -->
+          <line id="af-line-exe" x1="492" y1="192" x2="712" y2="298" stroke="rgba(251,146,60,0.0)" stroke-width="2" stroke-dasharray="6,4"/>
+          <!-- to Policy (right-far) -->
+          <line id="af-line-pol" x1="498" y1="188" x2="832" y2="298" stroke="rgba(251,191,36,0.0)" stroke-width="2" stroke-dasharray="6,4"/>
+
+          <!-- ═══════════════════════════════════
+               ROW 2: 5 WORKER AGENTS
+          ═══════════════════════════════════ -->
+
+          <!-- Helper macro: agent figure at cx,cy with color, emoji, name, role -->
+          <!-- PLANNER — cx=128 -->
+                    <!-- AGENT: PLANNER -->
+          <g id="af-ag-plan" opacity="0.4">
+            <circle cx="128" cy="324" r="40" fill="rgba(90,196,255,0.06)" stroke="#5ac4ff" stroke-width="2"/>
+            <circle cx="128" cy="324" r="40" fill="none" stroke="#5ac4ff" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-planner"><circle cx="128" cy="324" r="34"/></clipPath></defs>
+            <foreignObject x="94" y="290" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="planner.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-planner"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="76" y="368" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#5ac4ff" stroke-width="1.5"/>
+            <text x="128" y="382" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700" font-family="system-ui">PLANNER</text>
+            <text x="128" y="394" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">Task zerlegen</text>
+          </g>
+
+          <!-- RESEARCH — cx=248 -->
+                    <!-- AGENT: RESEARCH -->
+          <g id="af-ag-res" opacity="0.4">
+            <circle cx="248" cy="324" r="40" fill="rgba(34,197,94,0.06)" stroke="#22c55e" stroke-width="2"/>
+            <circle cx="248" cy="324" r="40" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-research"><circle cx="248" cy="324" r="34"/></clipPath></defs>
+            <foreignObject x="214" y="290" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="research.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-research"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="196" y="368" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#22c55e" stroke-width="1.5"/>
+            <text x="248" y="382" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700" font-family="system-ui">RESEARCH</text>
+            <text x="248" y="394" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">Web · Sources</text>
+          </g>
+
+          <!-- MEMORY — cx=480 -->
+                    <!-- AGENT: MEMORY -->
+          <g id="af-ag-mem" opacity="0.4">
+            <circle cx="480" cy="324" r="40" fill="rgba(74,141,255,0.06)" stroke="#4a8dff" stroke-width="2"/>
+            <circle cx="480" cy="324" r="40" fill="none" stroke="#4a8dff" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-memory"><circle cx="480" cy="324" r="34"/></clipPath></defs>
+            <foreignObject x="446" y="290" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="memory.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-memory"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="428" y="368" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#4a8dff" stroke-width="1.5"/>
+            <text x="480" y="382" text-anchor="middle" fill="#4a8dff" font-size="10" font-weight="700" font-family="system-ui">MEMORY</text>
+            <text x="480" y="394" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">Kontext</text>
+          </g>
+
+          <!-- EXECUTION — cx=712 -->
+                    <!-- AGENT: EXECUTION -->
+          <g id="af-ag-exe" opacity="0.4">
+            <circle cx="712" cy="324" r="40" fill="rgba(251,146,60,0.06)" stroke="#fb923c" stroke-width="2"/>
+            <circle cx="712" cy="324" r="40" fill="none" stroke="#fb923c" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-execution"><circle cx="712" cy="324" r="34"/></clipPath></defs>
+            <foreignObject x="678" y="290" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="execution.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-execution"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="660" y="368" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#fb923c" stroke-width="1.5"/>
+            <text x="712" y="382" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700" font-family="system-ui">EXECUTION</text>
+            <text x="712" y="394" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">Worker · Files</text>
+          </g>
+
+          <!-- POLICY — cx=832 -->
+                    <!-- AGENT: POLICY -->
+          <g id="af-ag-pol" opacity="0.4">
+            <circle cx="832" cy="324" r="40" fill="rgba(251,191,36,0.06)" stroke="#fbbf24" stroke-width="2"/>
+            <circle cx="832" cy="324" r="40" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-policy"><circle cx="832" cy="324" r="34"/></clipPath></defs>
+            <foreignObject x="798" y="290" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="policy.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-policy"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="780" y="368" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="832" y="382" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700" font-family="system-ui">POLICY</text>
+            <text x="832" y="394" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">DSGVO · Gov</text>
+          </g>
+
+          <!-- STATUS BADGES (show during work) -->
+          <g id="af-status-plan" opacity="0">
+            <rect x="72" y="452" width="112" height="20" rx="4" fill="rgba(90,196,255,0.15)" stroke="rgba(90,196,255,0.4)" stroke-width="1"/>
+            <text id="af-st-plan" x="128" y="465" text-anchor="middle" fill="#5ac4ff" font-size="9" font-family="JetBrains Mono,monospace">analysiere…</text>
+          </g>
+          <g id="af-status-res" opacity="0">
+            <rect x="192" y="452" width="112" height="20" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.4)" stroke-width="1"/>
+            <text id="af-st-res" x="248" y="465" text-anchor="middle" fill="#22c55e" font-size="9" font-family="JetBrains Mono,monospace">suche Quellen…</text>
+          </g>
+          <g id="af-status-mem" opacity="0">
+            <rect x="424" y="452" width="112" height="20" rx="4" fill="rgba(74,141,255,0.15)" stroke="rgba(74,141,255,0.4)" stroke-width="1"/>
+            <text id="af-st-mem" x="480" y="465" text-anchor="middle" fill="#4a8dff" font-size="9" font-family="JetBrains Mono,monospace">lade Kontext…</text>
+          </g>
+          <g id="af-status-exe" opacity="0">
+            <rect x="654" y="452" width="116" height="20" rx="4" fill="rgba(251,146,60,0.15)" stroke="rgba(251,146,60,0.4)" stroke-width="1"/>
+            <text id="af-st-exe" x="712" y="465" text-anchor="middle" fill="#fb923c" font-size="9" font-family="JetBrains Mono,monospace">erstelle Report…</text>
+          </g>
+          <g id="af-status-pol" opacity="0">
+            <rect x="778" y="452" width="108" height="20" rx="4" fill="rgba(251,191,36,0.15)" stroke="rgba(251,191,36,0.4)" stroke-width="1"/>
+            <text id="af-st-pol" x="832" y="465" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="JetBrains Mono,monospace">DSGVO-Check…</text>
+          </g>
+
+          <!-- RETURN ARROWS (agents → reviewer) — hidden initially -->
+          <line id="af-ret-plan" x1="128" y1="390" x2="362" y2="490" stroke="rgba(90,196,255,0)" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line id="af-ret-res"  x1="248" y1="390" x2="390" y2="490" stroke="rgba(34,197,94,0)" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line id="af-ret-mem"  x1="480" y1="430" x2="460" y2="490" stroke="rgba(74,141,255,0)" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line id="af-ret-exe"  x1="712" y1="390" x2="530" y2="490" stroke="rgba(251,146,60,0)" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <line id="af-ret-pol"  x1="832" y1="390" x2="558" y2="490" stroke="rgba(251,191,36,0)" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+          <!-- ═══════════════════════════════════
+               ROW 3: REVIEWER + SYNTHESIZER
+          ═══════════════════════════════════ -->
+
+          <!-- REVIEWER — cx=420 -->
+                    <!-- AGENT: REVIEWER -->
+          <g id="af-ag-rev" opacity="0.3">
+            <circle cx="420" cy="518" r="40" fill="rgba(167,139,250,0.06)" stroke="#a78bfa" stroke-width="2"/>
+            <circle cx="420" cy="518" r="40" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-reviewer"><circle cx="420" cy="518" r="34"/></clipPath></defs>
+            <foreignObject x="386" y="484" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="reviewer.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-reviewer"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="368" y="562" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="420" y="576" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700" font-family="system-ui">REVIEWER</text>
+            <text x="420" y="588" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">Qualitäts-Check</text>
+          </g>
+
+          <!-- SYNTHESIZER — cx=540 -->
+                    <!-- AGENT: SYNTHESIZER -->
+          <g id="af-ag-syn" opacity="0.3">
+            <circle cx="540" cy="518" r="40" fill="rgba(90,196,255,0.06)" stroke="#5ac4ff" stroke-width="2.5"/>
+            <circle cx="540" cy="518" r="40" fill="none" stroke="#5ac4ff" stroke-width="1.5" opacity="0">
+              <animate attributeName="r" values="40;52;40" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <defs><clipPath id="clip-synthesizer"><circle cx="540" cy="518" r="34"/></clipPath></defs>
+            <foreignObject x="506" y="484" width="68" height="68">
+              <video xmlns="http://www.w3.org/1999/xhtml" data-src="synthesizer.mp4" data-autoplay="true" muted="" loop="" playsinline=""
+                id="vid-synthesizer"
+                style="width:68px;height:68px;object-fit:cover;object-position:center 10%;border-radius:50%;display:block;background:#050816;clip-path:circle(50%)" preload="none" class="lazy-video"></video>
+            </foreignObject>
+            <rect x="488" y="562" width="104" height="32" rx="6" fill="rgba(5,8,22,0.9)" stroke="#5ac4ff" stroke-width="1.5"/>
+            <text x="540" y="576" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700" font-family="system-ui">SYNTHESIZER</text>
+            <text x="540" y="588" text-anchor="middle" fill="#4a5272" font-size="8.5" font-family="system-ui">One Voice</text>
+          </g>
+
+          <!-- Synthesizer → Supervisor return arrow -->
+          <line id="af-syn-sup" x1="508" y1="514" x2="480" y2="204" stroke="rgba(90,196,255,0)" stroke-width="2" stroke-dasharray="5,3"/>
+          <!-- Reviewer → Synthesizer arrow -->
+          <line id="af-rev-syn" x1="450" y1="553" x2="508" y2="548" stroke="rgba(90,196,255,0)" stroke-width="2"/>
+
+          <!-- OUTPUT bubble -->
+          <!-- OUTPUT BUBBLE — left side, styled like status boxes -->
+          <g id="af-output-g" opacity="0">
+            <rect x="30" y="490" width="340" height="100" rx="12" fill="rgba(5,8,22,0.95)" stroke="rgba(90,196,255,0.5)" stroke-width="2" filter="url(#af-glow)"/>
+            <rect x="30" y="490" width="340" height="4" rx="2" fill="#5ac4ff"/>
+            <text x="200" y="510" text-anchor="middle" fill="#5ac4ff" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace" letter-spacing="1.5">ONE VOICE OUTPUT · KIMBA</text>
+            <text id="af-out1" x="200" y="530" text-anchor="middle" fill="#e8ecff" font-size="10.5" font-weight="600"></text>
+            <text id="af-out2" x="200" y="548" text-anchor="middle" fill="#a9b7e6" font-size="9.5"></text>
+            <text id="af-out3" x="200" y="564" text-anchor="middle" fill="#6874a0" font-size="9"></text>
+          </g>
+
+          <!-- PHASE LABEL -->
+          <rect id="af-phase-box" x="20" y="18" width="210" height="44" rx="8" fill="rgba(5,12,32,0.85)" stroke="rgba(90,196,255,0.5)" stroke-width="1.5"/>
+          <text id="af-phase-line1" x="125" y="33" text-anchor="middle" fill="#5ac4ff" font-size="8" font-weight="700" font-family="JetBrains Mono,monospace" letter-spacing="0.5"></text>
+          <text id="af-phase-line2" x="125" y="50" text-anchor="middle" fill="#a9b7e6" font-size="9" font-weight="600" font-family="JetBrains Mono,monospace">Bereit…</text>
+
+          <!-- TOKEN ROW — top right of SVG -->
+          <rect x="760" y="8" width="190" height="22" rx="5" fill="rgba(5,8,22,0.75)" stroke="rgba(90,196,255,0.15)" stroke-width="1"/>
+          <text id="af-tok-svg" x="855" y="23" text-anchor="middle" fill="#2a3562" font-size="8.5" font-family="JetBrains Mono,monospace">Tokens: —</text>
+
+          <!-- QUESTION MARK TOOLTIPS -->
+          <g class="af-tip" onclick="ameshTip('supervisor',516,130)" style="cursor:pointer"><circle cx="505" cy="105" r="9" fill="rgba(251,146,60,0.12)" stroke="rgba(251,146,60,0.4)" stroke-width="1"/><text x="505" y="110" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('planner',166,324)" style="cursor:pointer"><circle cx="152" cy="300" r="9" fill="rgba(90,196,255,0.12)" stroke="rgba(90,196,255,0.4)" stroke-width="1"/><text x="152" y="305" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('research',286,324)" style="cursor:pointer"><circle cx="272" cy="300" r="9" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.4)" stroke-width="1"/><text x="272" y="305" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('memory',518,324)" style="cursor:pointer"><circle cx="506" cy="300" r="9" fill="rgba(74,141,255,0.12)" stroke="rgba(74,141,255,0.4)" stroke-width="1"/><text x="506" y="305" text-anchor="middle" fill="#4a8dff" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('execution',750,324)" style="cursor:pointer"><circle cx="737" cy="300" r="9" fill="rgba(251,146,60,0.12)" stroke="rgba(251,146,60,0.4)" stroke-width="1"/><text x="737" y="305" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('policy',870,324)" style="cursor:pointer"><circle cx="854" cy="300" r="9" fill="rgba(251,191,36,0.12)" stroke="rgba(251,191,36,0.4)" stroke-width="1"/><text x="854" y="305" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('reviewer',458,518)" style="cursor:pointer"><circle cx="444" cy="494" r="9" fill="rgba(167,139,250,0.12)" stroke="rgba(167,139,250,0.4)" stroke-width="1"/><text x="444" y="499" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700">?</text></g>
+          <g class="af-tip" onclick="ameshTip('synthesizer',578,518)" style="cursor:pointer"><circle cx="566" cy="494" r="9" fill="rgba(90,196,255,0.12)" stroke="rgba(90,196,255,0.4)" stroke-width="1"/><text x="566" y="499" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700">?</text></g>
+
+          <!-- DOTS GROUP -->
+          <g id="af-dots"></g>
+        </svg>
+
+
+
+        <div class="ios-video-overlay" id="amesh-overlay" aria-hidden="true">
+          <div class="svg-video-node kimba-ring" data-x="446" data-y="96" data-w="68" data-h="68"><video data-src="synthesizer.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node planner-ring" data-x="94" data-y="290" data-w="68" data-h="68"><video data-src="planner.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node memory-ring" data-x="214" data-y="290" data-w="68" data-h="68"><video data-src="memory.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node research-ring" data-x="446" data-y="290" data-w="68" data-h="68"><video data-src="research.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node execution-ring" data-x="678" data-y="290" data-w="68" data-h="68"><video data-src="execution.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node policy-ring" data-x="798" data-y="290" data-w="68" data-h="68"><video data-src="policy.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node reviewer-ring" data-x="386" data-y="484" data-w="68" data-h="68"><video data-src="reviewer.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+          <div class="svg-video-node synth-ring" data-x="506" data-y="484" data-w="68" data-h="68"><video data-src="synthesizer.mp4" data-autoplay="true" muted loop playsinline preload="none" class="lazy-video"></video></div>
+        </div>
+
+        <!-- OVERLAYS (absolute positioned over SVG) -->
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none">
+
+          <!-- TOKEN DETAIL (top-right, pointer-events on) -->
+          <div style="position:absolute;top:6px;right:6px;pointer-events:all;font-family:'JetBrains Mono',monospace;z-index:10">
+            <button id="amesh-tok-btn" onclick="var d=document.getElementById('amesh-tok-detail');d.style.display=d.style.display==='none'?'block':'none'"
+              style="background:rgba(5,8,22,0.85);border:1px solid rgba(90,196,255,0.2);border-radius:6px;color:#4a5272;font-size:9px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:all 0.2s"
+              onmouseover="this.style.borderColor='rgba(90,196,255,0.5)';this.style.color='#5ac4ff'" onmouseout="this.style.borderColor='rgba(90,196,255,0.2)';this.style.color='#4a5272'">
+              📊 <span id="amesh-tok-quick">Tokens: —</span>
+            </button>
+            <div id="amesh-tok-detail" style="display:none;margin-top:3px;background:rgba(5,8,22,0.97);border:1px solid rgba(90,196,255,0.25);border-radius:8px;padding:10px 14px;min-width:210px;box-shadow:0 8px 24px rgba(0,0,0,0.7)">
+              <div style="font-size:9px;color:#5ac4ff;letter-spacing:1.2px;margin-bottom:8px">TOKEN-VERBRAUCH PRO AGENT</div>
+              <div id="amesh-tok-rows" style="font-size:9.5px;color:#6874a0;line-height:2"></div>
+              <div style="border-top:1px solid rgba(90,196,255,0.1);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:9px;color:#a9b7e6">GESAMT</span>
+                <span id="amesh-tok-total" style="color:#5ac4ff;font-weight:700;font-size:11px">0 tk</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TOOLTIP -->
+          <div id="amesh-tooltip" style="display:none;position:absolute;background:rgba(5,8,22,0.97);border:1px solid rgba(90,196,255,0.35);border-radius:10px;padding:14px 18px;max-width:270px;z-index:20;box-shadow:0 8px 32px rgba(0,0,0,0.8);pointer-events:all">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span id="amesh-tip-title" style="font-size:12px;font-weight:700;color:#5ac4ff;font-family:'JetBrains Mono',monospace"></span>
+              <span onclick="document.getElementById('amesh-tooltip').style.display='none'" style="cursor:pointer;color:#4a5272;font-size:14px;line-height:1">✕</span>
+            </div>
+            <div id="amesh-tip-body" style="font-size:12px;color:#a9b7e6;line-height:1.7;margin-bottom:8px"></div>
+            <div id="amesh-tip-tasks" style="font-size:10.5px;color:#5ac4ff;border-top:1px solid rgba(90,196,255,0.1);padding-top:8px;line-height:1.8"></div>
+          </div>
+        </div>
+
+        <!-- REPLAY ROW -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 24px 14px;border-top:1px solid rgba(90,196,255,0.08)">
+          <div style="font-size:9px;color:#1a2340;font-family:'JetBrains Mono',monospace;letter-spacing:1.5px">AGENTMESH23 · v6.3.4 · AUTONOMOUS · PARALLEL</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="var p=document.getElementById('amesh-custom-body');var btn=this;var open=p.style.display!=='none';p.style.display=open?'none':'block';btn.textContent=open?'+ Aufgabe simulieren':'– Schliessen'" style="padding:7px 16px;background:rgba(90,196,255,0.06);border:1px solid rgba(90,196,255,0.2);border-radius:20px;color:#4a7aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(90,196,255,0.12)'" onmouseout="this.style.background='rgba(90,196,255,0.06)'">+ Aufgabe simulieren</button>
+            <button onclick="ameshPlay()" id="amesh-btn" style="padding:7px 20px;background:rgba(90,196,255,0.08);border:1px solid rgba(90,196,255,0.3);border-radius:20px;color:#5ac4ff;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(90,196,255,0.15)'" onmouseout="this.style.background='rgba(90,196,255,0.08)'">▶ Replay</button>
+          </div>
+        </div>
+
+        <!-- CUSTOM TASK INPUT -->
+        <div style="border-top:1px solid rgba(90,196,255,0.08);padding:16px 24px 22px;background:rgba(4,6,18,0.6)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="width:16px;height:1px;background:rgba(90,196,255,0.3);display:inline-block"></span>
+            🎯 Aufgabe eingeben
+          </div>
+          <div id="amesh-custom-body" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:start">
+            <div>
+              <textarea id="amesh-custom-task" placeholder="Aufgabe eingeben, z.B.: &quot;Analysiere unseren Newsletter und erstelle einen Verbesserungsvorschlag&quot;"
+                style="width:100%;background:rgba(8,12,28,0.9);border:1px solid rgba(90,196,255,0.18);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font);font-size:13px;resize:none;height:52px;line-height:1.5;outline:none;box-sizing:border-box;transition:border-color 0.15s"
+                onfocus="this.style.borderColor='rgba(90,196,255,0.6)'" onblur="this.style.borderColor='rgba(90,196,255,0.18)'"
+                onkeydown="if(event.key==='Enter'&&event.ctrlKey){event.preventDefault();ameshCustomRun()}"></textarea>
+              <div style="font-size:9px;color:#1e2a40;margin-top:4px;font-family:'JetBrains Mono',monospace">Strg+Enter zum Starten · Agents werden automatisch gewählt</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <button onclick="ameshCustomRun()" style="padding:9px 18px;background:linear-gradient(135deg,#5ac4ff,#4a8dff);color:#020617;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap">▶ Run</button>
+              <button onclick="var p=document.getElementById('amesh-schema-panel');p.style.display=p.style.display==='none'?'block':'none'" style="padding:5px 12px;background:transparent;color:#4a5272;border:1px solid rgba(90,196,255,0.15);border-radius:8px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap">{ } JSON</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                <button onclick="ameshCustomRun('retail')"    style="padding:6px 11px;background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:7px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">🏪 Retail KPIs</button>
+                <button onclick="ameshCustomRun('marketing')" style="padding:6px 11px;background:rgba(167,139,250,0.08);color:#a78bfa;border:1px solid rgba(167,139,250,0.25);border-radius:7px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">📣 Marketing</button>
+                <button onclick="ameshCustomRun('executive')" style="padding:6px 11px;background:rgba(34,197,94,0.08);color:#22c55e;border:1px solid rgba(34,197,94,0.25);border-radius:7px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">👔 Executive</button>
+                <button onclick="ameshCustomRun('research')"  style="padding:6px 11px;background:rgba(90,196,255,0.08);color:#5ac4ff;border:1px solid rgba(90,196,255,0.22);border-radius:7px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">🔍 Marktanalyse</button>
+                <button onclick="ameshCustomRun('product')"   style="padding:6px 11px;background:rgba(251,191,36,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.22);border-radius:7px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">📦 Produkt-Roadmap</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="amesh-schema-panel" style="display:none;margin-top:12px;background:rgba(4,6,18,0.95);border:1px solid rgba(90,196,255,0.15);border-radius:8px;padding:14px">
+            <div style="font-size:9px;color:var(--accent);letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:8px">JSON SCHEMA — Eigene Animation definieren</div>
+            <pre style="font-size:9.5px;color:#6874a0;font-family:'JetBrains Mono',monospace;margin:0;line-height:1.7;overflow-x:auto;white-space:pre-wrap">{"task":"Deine Aufgabe","agents":["planner","research"],"phases":[{"label":"Phase 1","active":["planner","memory"]},{"label":"Phase 2","active":["research","execution"]}],"output":["Zeile 1","Zeile 2","Ergebnis"]}</pre>
+            <textarea id="amesh-json-input" placeholder="JSON hier einfügen…"
+              style="width:100%;margin-top:8px;background:rgba(8,12,28,0.8);border:1px solid rgba(90,196,255,0.15);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;resize:none;height:56px;outline:none;box-sizing:border-box"></textarea>
+            <button onclick="ameshRunJSON()" style="margin-top:6px;padding:6px 16px;background:rgba(90,196,255,0.1);border:1px solid rgba(90,196,255,0.3);border-radius:6px;color:#5ac4ff;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace">▶ JSON ausführen</button>
+          </div>
+          </div><!-- /amesh-custom-body -->
+        </div>
+
+      </div>
+    </div>
+
+    
+    <div class="footer-note">Quelle: Originaldatei KI-OS_v5.html · AgentMesh23 Motion-Layer direkt übernommen.</div>
+  </div>
+  <script>
+(function(){
+  'use strict';
+
+  // ── Scenarios ──
+  var SCENARIOS = [
+    {
+      task: "\u201eErstelle Marktanalyse + Executive Briefing\u201c",
+      supMsg: ["Dispatch: Marktanalyse!", "Planner \u2192 Research \u2192 Execution"],
+      statuses: {plan:"Task \u2192 3 Schritte", res:"8 Quellen gefunden", mem:"Vorwissen geladen", exe:"Report PDF ready", pol:"DSGVO \u2713 ok"},
+      out: ["Marktanalyse: KI-OS addressiert \u20ac2.4B EU-Markt.", "Executive Briefing erstellt \u00b7 PDF + 8 Slides ready.", "Empfehlung: Go-to-Market Q3 2026 starten."]
+    },
+    {
+      task: "\u201eAnalysiere Q3-Zahlen + Briefing f\u00fcr Board\u201c",
+      supMsg: ["Dispatch: Q3-Analyse!", "Controlling + Research aktiv"],
+      statuses: {plan:"KPI-Framework", res:"BI-Daten extrahiert", mem:"Q2-Baseline geladen", exe:"Excel + PPT ready", pol:"Keine PII \u2713"},
+      out: ["Q3: Umsatz +12% \u00b7 Marge -2.1% (Logistik).", "Board-Deck: 8 Slides \u00b7 Variance-Erkl\u00e4rung ready.", "Empfehlung: Selektive Preiserh\u00f6hung Q4."]
+    },
+    {
+      task: "\u201ePr\u00fcfe Promo-Strategie + Kanalempfehlung\u201c",
+      supMsg: ["Dispatch: Promo-Analyse!", "Marketing + Data aktiv"],
+      statuses: {plan:"Promo-Kriterien", res:"Kampagnen-Daten", mem:"Vorjahres-KPIs", exe:"Promo-Report ready", pol:"Compliance \u2713"},
+      out: ["Promo underperformt -8% vs. Plan.", "Ursache: Timing. Empfehlung: Di/Do 10-14h.", "Budget +15% Kanal B \u00b7 ROI +22% erwartet."]
+    }
+  ];
+
+  // ── Agent info for tooltips ──
+  var AGENT_INFO = {
+    supervisor:  { color:"#fb923c", title:"Supervisor",  desc:"Koordiniert alle Agents. Dispatch, Monitoring, Recovery.", tasks:["Task-Analyse & Dispatch","Monitoring aller Agents","Recovery bei Fehlern","Qualit\u00e4tsentscheidung"] },
+    planner:     { color:"#5ac4ff", title:"Planner",     desc:"Zerlegt komplexe Aufgaben in strukturierte Teilschritte.", tasks:["Task-Dekomposition","Sub-Task-Priorisierung","Ressourcenplanung","Zeitsch\u00e4tzung"] },
+    research:    { color:"#22c55e", title:"Research",    desc:"Durchsucht Web, Datenbanken und APIs nach Informationen.", tasks:["Web-Suche multi-query","API-Abfragen","Faktenextraktion","Quellenvalidierung"] },
+    memory:      { color:"#4a8dff", title:"Memory",      desc:"L\u00e4dt relevanten Kontext aus fr\u00fcheren Gespr\u00e4chen.", tasks:["Semantische \u00c4hnlichkeitssuche","Kontext-Retrieval","User-Pr\u00e4ferenzen","Session-\u00fcbergreifend"] },
+    execution:   { color:"#fb923c", title:"Execution",   desc:"F\u00fchrt konkrete Tasks aus: erstellt Dateien, ruft APIs auf.", tasks:["Worker-Orchestrierung","Excel/PDF/PPT erstellen","API-Calls ausf\u00fchren","Ergebnisse als Download"] },
+    policy:      { color:"#fbbf24", title:"Policy",      desc:"Pr\u00fcft jede Ausgabe auf DSGVO-Konformit\u00e4t und PII.", tasks:["PII-Erkennung & Masking","DSGVO-Compliance","Budget-Kontrolle","Content-Policy"] },
+    reviewer:    { color:"#a78bfa", title:"Reviewer",    desc:"Qualit\u00e4tspr\u00fcfung: Faktentreue, Korrektheit, Vollst\u00e4ndigkeit.", tasks:["Faktencheck","Konsistenzpr\u00fcfung","Qualit\u00e4tsscore","Korrektur-Empfehlungen"] },
+    synthesizer: { color:"#5ac4ff", title:"Synthesizer", desc:"F\u00fchrt alle Resultate zusammen \u2014 One Voice Output via Kimba.", tasks:["Multi-Input-Synthese","Tone-Harmonisierung","One-Voice-Output","Format-Anpassung"] }
+  };
+
+  var NS = "http://www.w3.org/2000/svg";
+  var running = false;
+  var timers = [];
+  var scnIdx = 0;
+  var tokenMap = {};
+
+  // ── Helpers ──
+  function $(id) { return document.getElementById(id); }
+
+  function setText(id, txt) {
+    var el = $(id);
+    if (el) el.textContent = txt;
+  }
+
+  function setPhase(label, detail) {
+    var l1 = $("af-phase-line1"); if(l1) l1.textContent = label || "";
+    var l2 = $("af-phase-line2"); if(l2) l2.textContent = detail || "";
+  }
+
+  function fade(id, to, dur) {
+    var el = $(id);
+    if (!el) return;
+    var from = parseFloat(el.getAttribute("opacity") || "0");
+    var diff = to - from;
+    var steps = Math.max(1, dur / 16);
+    var i = 0;
+    var iv = setInterval(function() {
+      i++;
+      var v = Math.max(0, Math.min(1, from + diff * (i / steps)));
+      el.setAttribute("opacity", v.toFixed(2));
+      if (i >= steps) clearInterval(iv);
+    }, 16);
+    timers.push(iv);
+  }
+
+  function showLine(id, color) {
+    var el = $(id);
+    if (el) { el.setAttribute("stroke", color); el.setAttribute("stroke-opacity", "0.5"); }
+  }
+
+  function hideLine(id) {
+    var el = $(id);
+    if (el) { el.setAttribute("stroke", "rgba(0,0,0,0)"); el.setAttribute("stroke-opacity","0"); }
+  }
+
+  function delay(ms) {
+    return new Promise(function(res) {
+      var t = setTimeout(res, ms);
+      timers.push(t);
+    });
+  }
+
+  // ── Dot engine ──
+  var dotsGroup = null;
+
+  function getDotsGroup() {
+    if (!dotsGroup) dotsGroup = $("af-dots");
+    return dotsGroup;
+  }
+
+  function clearDots() {
+    var g = getDotsGroup();
+    if (g) while (g.firstChild) g.removeChild(g.firstChild);
+  }
+
+  function spawnDots(x1,y1,x2,y2, color, count, intervalMs, durationMs, startDelay, label, reverse) {
+    var ax = reverse ? x2 : x1, ay = reverse ? y2 : y1;
+    var bx = reverse ? x1 : x2, by = reverse ? y1 : y2;
+    for (var i = 0; i < count; i++) {
+      (function(dotIdx, delay_) {
+        var t = setTimeout(function() {
+          var g = getDotsGroup();
+          if (!g) return;
+          var grp = document.createElementNS(NS, "g");
+          var circle = document.createElementNS(NS, "circle");
+          circle.setAttribute("r", dotIdx === 0 && label ? "6" : "4.5");
+          circle.setAttribute("fill", color);
+          circle.style.filter = "drop-shadow(0 0 5px " + color + ")";
+          grp.appendChild(circle);
+          var trail = document.createElementNS(NS, "circle");
+          trail.setAttribute("r", "2");
+          trail.setAttribute("fill", color);
+          trail.setAttribute("opacity", "0.35");
+          grp.appendChild(trail);
+          if (dotIdx === 0 && label) {
+            var txt = document.createElementNS(NS, "text");
+            txt.setAttribute("text-anchor", "middle");
+            txt.setAttribute("font-size", "8");
+            txt.setAttribute("font-family", "JetBrains Mono,monospace");
+            txt.setAttribute("font-weight", "700");
+            txt.setAttribute("fill", color);
+            txt.textContent = label;
+            grp.appendChild(txt);
+          }
+          g.appendChild(grp);
+          var dx = bx - ax, dy = by - ay;
+          var steps = durationMs / 16;
+          var s = 0;
+          var anim = setInterval(function() {
+            s++;
+            var p = s / steps;
+            var e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2;
+            var tp = Math.max(0, p - 0.08);
+            var te = tp < 0.5 ? 4*tp*tp*tp : 1 - Math.pow(-2*tp+2,3)/2;
+            var cx = ax + dx*e, cy = ay + dy*e;
+            circle.setAttribute("cx", cx); circle.setAttribute("cy", cy);
+            trail.setAttribute("cx", ax + dx*te); trail.setAttribute("cy", ay + dy*te);
+            if (dotIdx === 0 && label) {
+              var tEl = grp.querySelector("text");
+              if (tEl) { tEl.setAttribute("x", cx); tEl.setAttribute("y", cy - 10); }
+            }
+            var op = p < 0.1 ? p/0.1 : p > 0.9 ? (1-p)/0.1 : 1;
+            grp.setAttribute("opacity", Math.max(0,Math.min(1,op)).toFixed(2));
+            if (s >= steps) {
+              clearInterval(anim);
+              if (g && grp.parentNode) g.removeChild(grp);
+            }
+          }, 16);
+          timers.push(anim);
+        }, delay_);
+        timers.push(t);
+      })(i, startDelay + i * intervalMs);
+    }
+  }
+
+  // ── Token tracking ──
+  function resetTokens() {
+    Object.keys(tokenMap).forEach(function(k) { delete tokenMap[k]; });
+    var q = $("amesh-tok-quick"); if (q) q.textContent = "Tokens: \u2014";
+    var r = $("amesh-tok-rows"); if (r) r.innerHTML = "";
+    var t = $("amesh-tok-total"); if (t) t.textContent = "0 tk";
+  }
+
+  function addTokens(agent, n) {
+    tokenMap[agent] = (tokenMap[agent] || 0) + n;
+    var total = Object.keys(tokenMap).reduce(function(a,k){ return a + tokenMap[k]; }, 0);
+    var q = $("amesh-tok-quick"); if (q) q.textContent = "Tokens: " + total.toLocaleString("de");
+    var rows = $("amesh-tok-rows");
+    if (rows) {
+      rows.innerHTML = Object.keys(tokenMap).map(function(a) {
+        var info = AGENT_INFO[a] || {};
+        return "<div style='display:flex;justify-content:space-between'><span style='color:" + (info.color||"#5ac4ff") + "'>" + a + "</span><span style='color:#a9b7e6'>" + tokenMap[a].toLocaleString("de") + " tk</span></div>";
+      }).join("");
+    }
+    var tot = $("amesh-tok-total"); if (tot) tot.textContent = total.toLocaleString("de") + " tk";
+  }
+
+  // ── Tooltip ──
+  window.ameshTip = function(agent, svgX, svgY) {
+    var info = AGENT_INFO[agent];
+    if (!info) return;
+    var tt = $("amesh-tooltip");
+    var wrap = $("amesh-wrap");
+    if (!tt || !wrap) return;
+    $("amesh-tip-title").textContent = info.title;
+    $("amesh-tip-body").textContent = info.desc;
+    $("amesh-tip-tasks").innerHTML = info.tasks.map(function(t){ return "<div>\u2192 " + t + "</div>"; }).join("");
+    var svg = $("amesh-svg");
+    if (svg) {
+      var sr = svg.getBoundingClientRect();
+      var wr = wrap.getBoundingClientRect();
+      var px = (svgX / 960) * sr.width + (sr.left - wr.left);
+      var py = (svgY / 620) * sr.height + (sr.top - wr.top);
+      tt.style.left = Math.min(px + 14, wr.width - 280) + "px";
+      tt.style.top = Math.max(py - 80, 8) + "px";
+    }
+    tt.style.display = "block";
+  };
+
+  // ── Reset ──
+  function reset() {
+    clearDots();
+    ["af-sup","af-ag-plan","af-ag-res","af-ag-mem","af-ag-exe","af-ag-pol","af-ag-rev","af-ag-syn"].forEach(function(id) {
+      var el = $(id); if (el) el.setAttribute("opacity","0.35");
+    });
+    ["af-status-plan","af-status-res","af-status-mem","af-status-exe","af-status-pol","af-sup-bubble","af-output-g"].forEach(function(id) { fade(id, 0, 200); });
+    ["af-line-plan","af-line-res","af-line-mem","af-line-exe","af-line-pol","af-ret-plan","af-ret-res","af-ret-mem","af-ret-exe","af-ret-pol","af-rev-syn","af-syn-sup","af-arrow-task"].forEach(function(id) { hideLine(id); });
+    setPhase("", "Bereit …");
+    resetTokens();
+  }
+
+  function activateAgent(agId, statusId, statusText) {
+    var el = $(agId);
+    if (el) {
+      el.setAttribute("opacity","1");
+      var vid = el.querySelector("video");
+      if (vid) vid.style.filter = "brightness(1.2) saturate(1.3)";
+    }
+    var stId = statusId.replace("af-status-","af-st-");
+    setText(stId, statusText);
+    fade(statusId, 1, 300);
+    var agName = agId.replace("af-ag-","").replace("af-sup","supervisor");
+    addTokens(agName, Math.floor(Math.random()*700) + 150);
+  }
+
+  function doneAgent(agId) {
+    var el = $(agId);
+    if (el) { el.setAttribute("opacity","1"); }
+  }
+
+  // ── Paths ──
+  var P = {
+    task_sup:  [480,62,  480,108],
+    sup_plan:  [462,188, 128,298],
+    sup_res:   [468,192, 248,298],
+    sup_mem:   [480,244, 480,298],
+    sup_exe:   [492,192, 712,298],
+    sup_pol:   [498,188, 832,298],
+    plan_rev:  [128,390, 362,490],
+    res_rev:   [248,390, 390,490],
+    mem_rev:   [480,430, 460,490],
+    exe_rev:   [712,390, 530,490],
+    pol_rev:   [832,390, 558,490],
+    rev_syn:   [450,553, 508,548],
+    syn_sup:   [508,514, 480,204]
+  };
+  var C = { plan:"#5ac4ff", res:"#22c55e", mem:"#4a8dff", exe:"#fb923c", pol:"#fbbf24", rev:"#a78bfa", syn:"#5ac4ff" };
+
+  // ── Main play ──
+  async function play(useCustom) {
+    if (running) return;
+    running = true;
+    timers.forEach(function(id){ try{clearTimeout(id);}catch(e){} try{clearInterval(id);}catch(e){} });
+    timers = [];
+    reset();
+
+    var s = (useCustom && window._customScenario) ? window._customScenario : SCENARIOS[scnIdx % SCENARIOS.length];
+    if (!useCustom || !window._customScenario) scnIdx++;
+
+    // Phase 1: Task
+    setPhase("PHASE 1", "Task eingetroffen");
+    setText("af-task-text", s.task);
+    showLine("af-arrow-task","rgba(90,196,255,0.5)");
+    spawnDots.apply(null, P.task_sup.concat(["#5ac4ff",3,200,700,0,"Task",false]));
+    await delay(900);
+
+    // Phase 2: Supervisor
+    setPhase("PHASE 2", "Supervisor analysiert");
+    var supEl = $("af-sup"); if (supEl) supEl.setAttribute("opacity","1");
+    setText("af-sup-text1", s.supMsg[0]);
+    setText("af-sup-text2", s.supMsg[1]);
+    fade("af-sup-bubble", 1, 400);
+    addTokens("supervisor", 250);
+    await delay(900);
+
+    // Phase 3: Dispatch
+    setPhase("PHASE 3", "Dispatch → alle Agents");
+    var lineColors = [["af-line-plan","#5ac4ff"],["af-line-res","#22c55e"],["af-line-mem","#4a8dff"],["af-line-exe","#fb923c"],["af-line-pol","#fbbf24"]];
+    lineColors.forEach(function(lc, i) { setTimeout(function(){ showLine(lc[0], lc[1]); }, i*100); });
+    var labels = ["PLAN","RES","MEM","EXE","POL"];
+    [P.sup_plan, P.sup_res, P.sup_mem, P.sup_exe, P.sup_pol].forEach(function(path, i) {
+      spawnDots.apply(null, path.concat([Object.values(C)[i], 4, 200, 900, i*130, labels[i], false]));
+    });
+    await delay(700);
+    activateAgent("af-ag-plan","af-status-plan", s.statuses.plan);
+    await delay(150);
+    activateAgent("af-ag-res","af-status-res", s.statuses.res);
+    await delay(150);
+    activateAgent("af-ag-mem","af-status-mem", s.statuses.mem);
+    await delay(150);
+    activateAgent("af-ag-exe","af-status-exe", s.statuses.exe);
+    await delay(150);
+    activateAgent("af-ag-pol","af-status-pol", s.statuses.pol);
+
+    // Phase 4: Bidirectional exchange
+    setPhase("PHASE 4", "Agents ↔ Supervisor parallel");
+    var agPaths = [P.sup_plan, P.sup_res, P.sup_mem, P.sup_exe, P.sup_pol];
+    var agCols  = ["#5ac4ff","#22c55e","#4a8dff","#fb923c","#fbbf24"];
+    var fwdLabels = ["upd?","data?","ctx?","run!","chk?"];
+    var retLabels = ["\u2713ok","\u2713data","\u2713ctx","\u2713done","\u2713ok"];
+    agPaths.forEach(function(path, i) {
+      spawnDots.apply(null, path.concat([agCols[i], 3, 280, 850, i*150, fwdLabels[i], false]));
+    });
+    await delay(1100);
+    agPaths.forEach(function(path, i) {
+      spawnDots.apply(null, path.concat([agCols[i], 3, 280, 850, 200+i*180, retLabels[i], true]));
+    });
+    // Cross-agent pings
+    spawnDots(248,314, 128,314, "#22c55e", 2, 350, 650, 0, "sync", false);
+    spawnDots(128,326, 248,326, "#5ac4ff", 2, 350, 650, 250, "ack", false);
+    spawnDots(712,314, 480,314, "#fb923c", 2, 350, 700, 150, "ctx?", false);
+    spawnDots(480,326, 712,326, "#4a8dff", 2, 350, 700, 400, "ctx\u2713", false);
+    await delay(2000);
+
+    // Phase 5: Return to Reviewer
+    setPhase("PHASE 5", "Ergebnisse → Reviewer");
+    ["af-status-plan","af-status-res","af-status-mem","af-status-exe","af-status-pol"].forEach(function(id){ fade(id, 0, 300); });
+    var retLines = [["af-ret-plan","#5ac4ff"],["af-ret-res","#22c55e"],["af-ret-mem","#4a8dff"],["af-ret-exe","#fb923c"],["af-ret-pol","#fbbf24"]];
+    retLines.forEach(function(rl, i) { setTimeout(function(){ showLine(rl[0], rl[1]); }, i*80); });
+    var retPaths = [P.plan_rev, P.res_rev, P.mem_rev, P.exe_rev, P.pol_rev];
+    var retLbls  = ["struct","data","ctx","files","ok"];
+    retPaths.forEach(function(path, i) {
+      spawnDots.apply(null, path.concat([agCols[i], 3, 200, 850, i*140, retLbls[i], false]));
+    });
+    await delay(1000);
+    var revEl = $("af-ag-rev"); if (revEl) revEl.setAttribute("opacity","1");
+    addTokens("reviewer", 300);
+    await delay(700);
+
+    // Phase 6: Reviewer → Synthesizer
+    setPhase("PHASE 5", "Reviewer → Synthesizer");
+    showLine("af-rev-syn","rgba(90,196,255,0.6)");
+    spawnDots.apply(null, P.rev_syn.concat(["#a78bfa", 4, 180, 600, 0, "check", false]));
+    spawnDots.apply(null, P.rev_syn.concat(["#5ac4ff", 3, 200, 700, 350, "\u2713ok", false]));
+    spawnDots.apply(null, P.rev_syn.concat(["#a78bfa", 2, 300, 500, 150, "note", true]));
+    await delay(800);
+    var synEl = $("af-ag-syn"); if (synEl) synEl.setAttribute("opacity","1");
+    addTokens("synthesizer", 400);
+    await delay(700);
+
+    // Phase 6.5: Synthesizer → Supervisor
+    setPhase("PHASE 6", "Synthesizer \u2192 Supervisor");
+    showLine("af-syn-sup","rgba(90,196,255,0.5)");
+    spawnDots.apply(null, P.syn_sup.concat(["#5ac4ff", 4, 160, 650, 0, "Ergebnis", false]));
+    spawnDots.apply(null, P.syn_sup.concat(["#22c55e", 2, 220, 600, 300, "\u2713ok", false]));
+    addTokens("supervisor", 200);
+    await delay(900);
+
+    // Phase 7: Supervisor leuchtet auf, dann Ergebnis-Box
+    setPhase("PHASE 7", "One Voice Output");
+    // Flash supervisor ring
+    var supEl = $("af-sup"); if (supEl) {
+      var supCircle = supEl.querySelector("circle");
+      if (supCircle) {
+        var origStroke = supCircle.getAttribute("stroke");
+        supCircle.setAttribute("stroke","#5ac4ff");
+        supCircle.setAttribute("stroke-width","4");
+        setTimeout(function(){
+          supCircle.setAttribute("stroke", origStroke || "#fb923c");
+          supCircle.setAttribute("stroke-width","2");
+        }, 600);
+      }
+    }
+    await delay(400);
+    // Show output box
+    setText("af-out1", s.out[0]);
+    setText("af-out2", s.out[1]);
+    setText("af-out3", s.out[2]);
+    fade("af-output-g", 1, 600);
+    await delay(400);
+    fade("af-sup-bubble", 0, 400);
+
+    running = false;
+    if (!useCustom) {
+      timers.push(setTimeout(function(){ play(false); }, 6000));
+    }
+  }
+
+  // ── Public API ──
+  window.ameshPlay = function(useCustom) {
+    timers.forEach(function(id){ try{clearTimeout(id);}catch(e){} try{clearInterval(id);}catch(e){} });
+    timers = []; running = false; clearDots();
+    play(useCustom);
+  };
+
+  window.ameshCustomRun = function(preset) {
+    // Show demo info message
+    var body = document.getElementById("amesh-custom-body");
+    if (body) body.style.display = "block";
+    // Update toggle btn
+    document.querySelectorAll("button").forEach(function(b){
+      if(b.textContent.indexOf("Aufgabe simulieren")>=0) b.textContent="– Schliessen";
+    });
+    // Inject info box if not already there
+    if (!document.getElementById("amesh-demo-info")) {
+      var box = document.createElement("div");
+      box.id = "amesh-demo-info";
+      box.style.cssText = "margin-top:12px;padding:14px 18px;background:rgba(5,12,32,0.95);border:1px solid rgba(90,196,255,0.3);border-radius:10px;font-size:13px;color:#a9b7e6;line-height:1.7;display:flex;align-items:flex-start;gap:12px";
+      box.innerHTML = "<span style=\"font-size:20px;flex-shrink:0\">\uD83D\uDCAC<\/span><span>In dieser Demo ist keine eigene Agenten-Simulation m\u00f6glich. F\u00fcr eine Live-Demo oder individuelle Integration wenden Sie sich gerne an uns: <a href=\"mailto:info@retail-business.eu\" style=\"color:#5ac4ff;text-decoration:none;font-weight:600\">info@retail-business.eu<\/a><\/span>";
+      if (body) body.appendChild(box);
+    }
+    // Still animate the presets for visual demo
+    var PRESETS = {
+      retail:    { task:"„Analysiere Promo-Performance + OOS-Risiken“", supMsg:["Dispatch: Retail!", "Retail Brain aktiv"], statuses:{plan:"Promo-Analyse",res:"Bestandsdaten",mem:"Vorjahres-KPIs",exe:"Report ready",pol:"DSGVO ✓"}, out:["Promo underperformt -8% vs. Plan. OOS-Risiko: 3 SKUs.","Empfehlung: Timing-Shift Di/Do + Bestandsaufstockung.","Report als PDF bereit. Retail Brain aktiv."] },
+      marketing: { task:"„Kampagnen-Analyse + Content-Empfehlungen“", supMsg:["Dispatch: Marketing!", "Research + Execution"], statuses:{plan:"Content-Framework",res:"Kampagnen-Daten",mem:"Vorherige Kampagnen",exe:"Content generiert",pol:"Brand-Check ✓"}, out:["Q3-Kampagne: CTR +14%, Conv. -3%. Optimierungspotenzial.","Content-Varianten für Kanal B generiert (3 Optionen).","A/B-Test-Empfehlung: Headline-Variante 2 bevorzugt."] },
+      executive: { task:"\u201eExecutive Briefing Q2 f\u00fcr Board-Meeting\u201c", supMsg:["Dispatch: Executive!", "Synthesis aktiv"], statuses:{plan:"Struktur definiert",res:"Kennzahlen gesammelt",mem:"Q1-Basis geladen",exe:"Briefing erstellt",pol:"Konfidenziell \u2713"}, out:["Umsatz +12%, EBIT stabil, NPS +4.","3 strategische Handlungsfelder identifiziert.","Board-Deck 6 Slides exportbereit."] },
+      research:  { task:"\u201eMarktanalyse KI-Software Mittelstand 2025\u201c", supMsg:["Dispatch: Research!", "42 Quellen analysiert"], statuses:{plan:"Research-Design",res:"42 Quellen",mem:"Benchmarks",exe:"Analyse fertig",pol:"Quellen \u2713"}, out:["Marktvolumen 4,2 Mrd. EUR DACH. CAGR +31%.","Top: Retail AI, HR-Automation, Finance AI.","Vollbericht verf\u00fcgbar."] },
+      product:   { task:"\u201eProdukt-Roadmap KI-Features Q3/Q4\u201c", supMsg:["Dispatch: Product!", "Planner aktiv"], statuses:{plan:"Feature-Prio",res:"User-Feedback",mem:"Backlog",exe:"Roadmap fertig",pol:"Scope \u2713"}, out:["8 Features: 3 Quick-Wins, 2 Strategic.","2,4 FTE Ressourcenbedarf Q3.","Roadmap + Export bereit."] }
+    };
+    if (preset && PRESETS[preset]) {
+      window._customScenario = PRESETS[preset];
+      window.ameshPlay(true);
+    }
+  };
+  window.ameshRunJSON = function() { window.ameshCustomRun(null); };
+
+  // ── Canvas background ──
+  (function() {
+    var canvas = $("amesh-canvas");
+    if (!canvas) return;
+    var wrap = $("amesh-wrap");
+    var ctx = canvas.getContext("2d");
+    function resize() { canvas.width = wrap.offsetWidth; canvas.height = wrap.offsetHeight; }
+    resize();
+    window.addEventListener("resize", resize);
+    var pts = [];
+    for (var i = 0; i < 35; i++) {
+      pts.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, r:Math.random()*1.2+.3 });
+    }
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      pts.forEach(function(p) {
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+        if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle="rgba(90,196,255,0.2)"; ctx.fill();
+        pts.forEach(function(q) {
+          var dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+          if(d<90){ ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+            ctx.strokeStyle="rgba(74,141,255,"+(0.07*(1-d/90))+")"; ctx.lineWidth=.5; ctx.stroke(); }
+        });
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  // ── Auto-start ──
+  var ob = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting) { ob.disconnect(); setTimeout(function(){ play(false); }, 800); }
+  }, { threshold: 0.25 });
+  var svgEl = document.querySelector("#amesh-svg");
+  if (svgEl) ob.observe(svgEl);
+
+})();
+
+</script>
+  <script src="https://xs.qa/wp-content/plugins/ki-os/embed.js?ver=0.9.1.117" data-kios-id="98" data-kios-token="kios1.eyJ2IjoxLCJpYXQiOjE3Njg4MzQ5ODUsIm9yaWdpbnMiOlsiaHR0cHM6XC9cL2tpLW9zLm9yZyJdLCJub25jZSI6InBVcThtdXJkcE4ifQ.2-xdm9IFFTrEo237vh8hqn_oLKbUFnq9ATuMp36F06A" async></script>
+
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isIOS = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isSafari = /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
+  if (isIOS && isSafari) {
+    document.documentElement.classList.add('ios-safari','mobile-premium-fix');
+  }
+  function placeOverlay(overlayId, viewW, viewH){
+    var overlay = document.getElementById(overlayId);
+    if (!overlay || !overlay.parentElement) return;
+    var stage = overlay.parentElement;
+    var stageRect = stage.getBoundingClientRect();
+    var width = stageRect.width || viewW;
+    var height = width * (viewH / viewW);
+    overlay.style.height = height + 'px';
+    Array.prototype.forEach.call(overlay.querySelectorAll('.svg-video-node'), function(node){
+      var x = parseFloat(node.dataset.x || '0');
+      var y = parseFloat(node.dataset.y || '0');
+      var w = parseFloat(node.dataset.w || '0');
+      var h = parseFloat(node.dataset.h || '0');
+      node.style.left = (x / viewW * width) + 'px';
+      node.style.top = (y / viewH * height) + 'px';
+      node.style.width = (w / viewW * width) + 'px';
+      node.style.height = (h / viewH * height) + 'px';
+    });
+  }
+  function placeAllPremiumOverlays(){
+    placeOverlay('ov-overlay', 960, 570);
+    placeOverlay('amesh-overlay', 960, 620);
+  }
+  window.addEventListener('resize', placeAllPremiumOverlays, {passive:true});
+  window.addEventListener('orientationchange', function(){ setTimeout(placeAllPremiumOverlays, 120); }, {passive:true});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(placeAllPremiumOverlays, 50); });
+  } else {
+    setTimeout(placeAllPremiumOverlays, 50);
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  function loadVideo(video){
+    if (!video || video.dataset.loaded === 'true') return;
+    var src = video.getAttribute('data-src');
+    if (!src) return;
+    video.setAttribute('src', src);
+    video.dataset.loaded = 'true';
+    video.load();
+    if (video.getAttribute('data-autoplay') === 'true') {
+      video.setAttribute('autoplay', '');
+      var playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(function(){});
+    }
+  }
+
+  function initLazyVideos(){
+    var videos = Array.prototype.slice.call(document.querySelectorAll('video.lazy-video[data-src]'));
+    if (!videos.length) return;
+
+    if (!('IntersectionObserver' in window)) {
+      videos.forEach(loadVideo);
+      return;
+    }
+
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting || entry.intersectionRatio > 0) {
+          loadVideo(entry.target);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '300px 0px' });
+
+    videos.forEach(function(video){ observer.observe(video); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLazyVideos, { once: true });
+  } else {
+    initLazyVideos();
+  }
+})();
+</script>
+
+</body>
+</html>

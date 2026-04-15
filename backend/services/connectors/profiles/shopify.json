@@ -1,0 +1,30 @@
+{
+  "profileId": "shopify",
+  "tier": "enterprise",
+  "name": "Shopify",
+  "category": "ecommerce",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "hmac",
+  "capabilities": ["shop.orders", "shop.products", "shop.customers", "shop.inventory", "shop.fulfillment"],
+  "webhookPattern": "https://{store}.myshopify.com/admin/api/{apiVersion}/webhooks.json",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Shopify-Access-Token": "{accessToken}",
+    "X-Shopify-Hmac-Sha256": "{hmacSignature}"
+  },
+  "events": [
+    "orders/create", "orders/updated", "orders/paid",
+    "products/create", "products/update",
+    "customers/create", "inventory_levels/update"
+  ],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "number" },
+      "created_at": { "type": "string" },
+      "updated_at": { "type": "string" }
+    }
+  },
+  "docs": "https://shopify.dev/docs/apps/webhooks"
+}

@@ -1,0 +1,30 @@
+{
+  "profileId": "make",
+  "tier": "community",
+  "name": "Make (Integromat)",
+  "category": "automation",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "none",
+  "capabilities": ["automation.trigger", "automation.receive", "workflow.execute", "scenario.run"],
+  "webhookPattern": "https://hook.eu1.make.com/{webhookId}",
+  "webhookPatternUS": "https://hook.us1.make.com/{webhookId}",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "events": [
+    "scenario.triggered", "scenario.completed", "scenario.failed", "module.executed"
+  ],
+  "payloadSchema": {
+    "type": "object",
+    "description": "Make Custom Webhook empfängt beliebige JSON-Struktur — Felder werden im Scenario-Editor gemapt",
+    "properties": {
+      "event":     { "type": "string" },
+      "data":      { "type": "object" },
+      "timestamp": { "type": "string", "format": "date-time" },
+      "tenantId":  { "type": "string" }
+    }
+  },
+  "notes": "Make Webhook-URLs werden im Scenario unter 'Webhooks > Custom webhook' erstellt. EU- und US-Region haben unterschiedliche Endpoints. Keine Auth nötig, optional IP-Whitelisting.",
+  "docs": "https://www.make.com/en/help/tools/webhooks"
+}

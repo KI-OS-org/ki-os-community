@@ -1,0 +1,12 @@
+export { workspaceAdapter } from "@/lib/adapters/workspace";
+export { governanceAdapter } from "@/lib/adapters/governance";
+export { routingAdapter } from "@/lib/adapters/routing";
+export { economicAdapter } from "@/lib/adapters/economic";
+export { tenantAdapter } from "@/lib/adapters/tenant";
+export { packsAdapter } from "@/lib/adapters/packs";
+export { federationAdapter } from "@/lib/adapters/federation";
+export { operationsAdapter } from "@/lib/adapters/operations";
+export { retailAdapter } from "@/lib/adapters/retail";
+export { integrationsAdapter } from "@/lib/adapters/integrations";
+export { webhooksAdapter } from "@/lib/adapters/webhooks";
+export { mappingsAdapter } from "@/lib/adapters/mappings";

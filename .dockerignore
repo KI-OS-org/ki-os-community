@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+frontend/orbit-control/node_modules/
+
+# Build artifacts
+dist/
+.next/
+out/
+coverage/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Dev/internal files
+.claude/
+.git/
+.gitleaks.toml
+scripts/github-safe-push.js
+scripts/ki-os-permissions-hook.js
+ki-os-permissions.json
+
+# Logs & temp
+*.log
+data/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db

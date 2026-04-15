@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "active": false,
+  "stopRequested": false,
+  "interrupted": false,
+  "interruptReason": null,
+  "lastActionAt": null,
+  "lastObserveAt": null,
+  "lastScreenshotPath": null,
+  "lockState": {
+    "locked": false,
+    "sessionId": null,
+    "reason": null
+  },
+  "queue": [],
+  "history": [],
+  "currentAction": null
+}

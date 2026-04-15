@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Kimba Moment — KI-OS Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050816;--text:#f5f7ff;--text2:#a9b7e6;--muted:#6874a0;
+  --accent:#5ac4ff;--font:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+body{background:
+  radial-gradient(ellipse 70% 50% at 50% -5%,rgba(90,196,255,.1) 0%,transparent 65%),
+  radial-gradient(ellipse 40% 35% at 90% 85%,rgba(251,146,60,.07) 0%,transparent 55%),
+  var(--bg);}
+.page{max-width:1300px;margin:0 auto;padding:28px 24px 60px;}
+
+/* header */
+.nav{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.nav-back{font-family:var(--mono);font-size:10px;color:var(--muted);text-decoration:none;letter-spacing:.5px;transition:color .15s;}
+.nav-back:hover{color:var(--accent);}
+.nav-sep{width:1px;height:14px;background:rgba(90,196,255,.15);}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;border:1px solid rgba(90,196,255,.28);background:rgba(90,196,255,.08);color:var(--accent);font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(90,196,255,.7);}
+h1{font-size:34px;letter-spacing:-1.2px;line-height:1.08;margin:10px 0 6px;}
+.lead{color:var(--text2);font-size:15px;max-width:780px;line-height:1.6;margin-bottom:22px;}
+
+/* input card */
+.input-card{background:linear-gradient(135deg,#06091d,#030610);border:1px solid rgba(90,196,255,.18);border-radius:16px;padding:20px 22px;margin-bottom:18px;}
+.input-label{font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.input-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;}
+textarea#q-input{width:100%;background:rgba(8,12,28,.9);border:1px solid rgba(90,196,255,.18);border-radius:9px;padding:12px 14px;color:var(--text);font-family:var(--font);font-size:14px;resize:none;height:68px;line-height:1.55;outline:none;transition:border-color .15s;}
+textarea#q-input:focus{border-color:rgba(90,196,255,.6);}
+textarea#q-input::placeholder{color:var(--muted);}
+.btn-run{padding:11px 20px;background:linear-gradient(135deg,#5ac4ff,#4a8dff);color:#020617;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);white-space:nowrap;transition:opacity .15s;min-width:120px;}
+.btn-run:hover{opacity:.88;}
+.btn-run:disabled{opacity:.4;cursor:not-allowed;}
+.hint{font-size:10px;color:var(--muted);margin-top:5px;font-family:var(--mono);}
+.presets{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;align-items:center;}
+.preset-btn{padding:4px 11px;background:rgba(90,196,255,.05);color:var(--muted);border:1px solid rgba(90,196,255,.13);border-radius:20px;font-size:10px;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.preset-btn:hover{background:rgba(90,196,255,.11);color:var(--accent);border-color:rgba(90,196,255,.32);}
+.status-bar{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--muted);padding-top:9px;min-height:24px;}
+.spinner{width:12px;height:12px;border:2px solid rgba(90,196,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* JSON panel */
+.json-panel{background:rgba(4,6,18,.97);border:1px solid rgba(90,196,255,.14);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:none;}
+.json-panel summary{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:1.2px;cursor:pointer;user-select:none;list-style:none;}
+.json-panel summary::-webkit-details-marker{display:none;}
+.json-panel pre{margin-top:8px;font-size:9.5px;color:#6874a0;font-family:var(--mono);line-height:1.7;overflow-x:auto;white-space:pre-wrap;max-height:180px;overflow-y:auto;}
+
+/* sim wrap */
+#sim-wrap{background:linear-gradient(135deg,#030610,#060c1e);border:1px solid rgba(90,196,255,.16);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.8);position:relative;}
+.sim-topbar{font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;padding:15px 22px 0;display:flex;align-items:center;gap:10px;}
+.sim-topbar span{width:22px;height:1px;background:var(--accent);display:inline-block;}
+#sim-canvas{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.45;}
+#sim-svg{width:100%;height:auto;display:block;position:relative;z-index:1;}
+.bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 22px 13px;border-top:1px solid rgba(90,196,255,.07);}
+.version-tag{font-size:9px;color:#1a2340;font-family:var(--mono);letter-spacing:1.5px;}
+.ctrl-btns{display:flex;gap:7px;}
+.ctrl-btn{padding:6px 16px;background:rgba(90,196,255,.06);border:1px solid rgba(90,196,255,.18);border-radius:20px;color:#4a7aaa;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s;}
+.ctrl-btn:hover{background:rgba(90,196,255,.12);color:var(--accent);}
+.footer-note{margin-top:16px;font-size:11px;color:var(--muted);font-family:var(--mono);}
+
+@media(max-width:800px){
+  .page{padding:16px 14px 40px;}
+  h1{font-size:24px;}
+  .lead{font-size:13px;}
+  .input-row{grid-template-columns:1fr;}
+  #sim-svg{width:100%!important;height:auto!important;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Nav -->
+  <div class="nav">
+    <a class="nav-back" href="../index.html">← Simulations Hub</a>
+    <div class="nav-sep"></div>
+    <div class="eyebrow"><span class="dot"></span> Pipeline · 3 Sekunden</div>
+  </div>
+
+  <h1>The Kimba Moment</h1>
+  <p class="lead">Was passiert in den 3 Sekunden zwischen deiner Frage und Kimbas Antwort? Gib eine echte Business-Frage ein — KI-OS zeigt dir live jede Verarbeitungsstufe.</p>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">
+      <span style="width:14px;height:1px;background:rgba(90,196,255,.4);display:inline-block;"></span>
+      💬 Business-Frage eingeben
+    </div>
+    <div class="input-row">
+      <div>
+        <textarea id="q-input" placeholder='z.B. „Wie war unser Q3? Erstelle ein kurzes Board-Briefing."'></textarea>
+        <div class="hint">Strg+Enter · KI analysiert was jede Stufe konkret tut</div>
+      </div>
+      <button class="btn-run" id="btn-run" onclick="runKimba()">▶ Senden</button>
+    </div>
+    <div class="presets">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted);">Beispiele:</span>
+      <button class="preset-btn" onclick="setQ('Wie war unser Q3? Umsatz, Marge, Top-Risiken — Board-ready.')">📊 Q3-Review</button>
+      <button class="preset-btn" onclick="setQ('Erstelle eine Wettbewerbsanalyse KI-Software Mittelstand Deutschland 2025.')">🔍 Marktanalyse</button>
+      <button class="preset-btn" onclick="setQ('Analysiere unsere Top-5-Kunden nach CLV und Churn-Risiko.')">👥 Kundenanalyse</button>
+      <button class="preset-btn" onclick="setQ('Welche Promo-Aktionen haben Q3 underperformt und warum?')">📣 Promo-Check</button>
+      <button class="preset-btn" onclick="setQ('Erstelle eine DSGVO-konforme Zusammenfassung des letzten Audits.')">⚖️ Compliance</button>
+    </div>
+    <div class="status-bar" id="status-bar"></div>
+  </div>
+
+  <!-- JSON -->
+  <details class="json-panel" id="json-panel">
+    <summary>▸ KI-Analyse JSON (KIMBA · KI-OS)</summary>
+    <pre id="json-display"></pre>
+  </details>
+
+  <!-- Simulation -->
+  <div id="sim-wrap">
+    <div class="sim-topbar"><span></span> KI-OS Pipeline · Intent → Memory → Router → Policy → Synthesis → Output</div>
+
+    <div style="position:relative;">
+      <canvas id="sim-canvas"></canvas>
+
+      <svg id="sim-svg" viewBox="0 0 1100 495" xmlns="http://www.w3.org/2000/svg" style="font-family:system-ui,-apple-system,sans-serif;">
+        <defs>
+          <filter id="glow-s"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="glow-l"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <marker id="arr-c"  markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#5ac4ff"/></marker>
+          <marker id="arr-o"  markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#fb923c"/></marker>
+          <marker id="arr-g"  markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#34d399"/></marker>
+          <pattern id="k-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="rgba(90,196,255,0.025)" stroke-width="1"/></pattern>
+          <!-- Stage gradients -->
+          <radialGradient id="g0" cx="50%" cy="35%"><stop offset="0%" stop-color="#5ac4ff" stop-opacity=".35"/><stop offset="100%" stop-color="#050816" stop-opacity=".95"/></radialGradient>
+          <radialGradient id="g1" cx="50%" cy="35%"><stop offset="0%" stop-color="#818cf8" stop-opacity=".35"/><stop offset="100%" stop-color="#050816" stop-opacity=".95"/></radialGradient>
+          <radialGradient id="g2" cx="50%" cy="35%"><stop offset="0%" stop-color="#c084fc" stop-opacity=".35"/><stop offset="100%" stop-color="#050816" stop-opacity=".95"/></radialGradient>
+          <radialGradient id="g3" cx="50%" cy="35%"><stop offset="0%" stop-color="#34d399" stop-opacity=".35"/><stop offset="100%" stop-color="#050816" stop-opacity=".95"/></radialGradient>
+          <radialGradient id="g4" cx="50%" cy="35%"><stop offset="0%" stop-color="#fb923c" stop-opacity=".4"/><stop offset="100%" stop-color="#050816" stop-opacity=".95"/></radialGradient>
+        </defs>
+
+        <!-- Background -->
+        <rect width="1100" height="495" fill="url(#k-grid)"/>
+
+        <!-- ── QUESTION BOX ── -->
+        <rect x="50" y="16" width="1000" height="46" rx="10" fill="rgba(90,196,255,0.06)" stroke="rgba(90,196,255,0.3)" stroke-width="1.5" id="k-qbox"/>
+        <text x="550" y="33" text-anchor="middle" fill="#5ac4ff" font-size="9" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">ANFRAGE</text>
+        <text id="k-qtext" x="550" y="50" text-anchor="middle" fill="#a9b7e6" font-size="12">Gib oben eine Business-Frage ein und klicke Senden</text>
+
+        <!-- Arrow: question → Intent -->
+        <line id="k-arr-q" x1="96" y1="62" x2="96" y2="127" stroke="rgba(90,196,255,0)" stroke-width="2" marker-end="url(#arr-c)"/>
+
+        <!-- ── PIPELINE CONNECTING LINES ── -->
+        <line id="k-pipe-01" x1="142" y1="175" x2="277" y2="175" stroke="rgba(90,196,255,0)"   stroke-width="2.5" stroke-dasharray="6,4"/>
+        <line id="k-pipe-12" x1="369" y1="175" x2="504" y2="175" stroke="rgba(129,140,248,0)" stroke-width="2.5" stroke-dasharray="6,4"/>
+        <line id="k-pipe-23" x1="596" y1="175" x2="731" y2="175" stroke="rgba(192,132,252,0)" stroke-width="2.5" stroke-dasharray="6,4"/>
+        <line id="k-pipe-34" x1="823" y1="175" x2="958" y2="175" stroke="rgba(52,211,153,0)"  stroke-width="2.5" stroke-dasharray="6,4"/>
+
+        <!-- ── STAGE 0: INTENT cx=96 ── -->
+        <g id="k-s0" opacity="0.3">
+          <circle cx="96" cy="175" r="45" fill="url(#g0)" stroke="#5ac4ff" stroke-width="2"/>
+          <circle cx="96" cy="175" r="45" fill="none" stroke="#5ac4ff" stroke-width="1.5" opacity="0">
+            <animate attributeName="r" values="45;60;45" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite"/>
+          </circle>
+          <text x="96" y="169" text-anchor="middle" font-size="24" dominant-baseline="middle">🎯</text>
+          <rect x="44" y="225" width="104" height="28" rx="6" fill="rgba(5,8,22,0.9)" stroke="#5ac4ff" stroke-width="1.5"/>
+          <text x="96" y="237" text-anchor="middle" fill="#5ac4ff" font-size="10" font-weight="700">INTENT</text>
+          <text x="96" y="248" text-anchor="middle" fill="#4a5272" font-size="8">Anfrage verstehen</text>
+        </g>
+        <!-- Intent detail card -->
+        <g id="k-d0" opacity="0">
+          <rect x="20" y="262" width="152" height="52" rx="7" fill="rgba(5,8,22,0.95)" stroke="rgba(90,196,255,0.4)" stroke-width="1"/>
+          <rect x="20" y="262" width="152" height="3" rx="1" fill="#5ac4ff"/>
+          <text id="k-d0-l1" x="96" y="278" text-anchor="middle" fill="#5ac4ff" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace"></text>
+          <text id="k-d0-l2" x="96" y="293" text-anchor="middle" fill="#a9b7e6" font-size="9"></text>
+          <text id="k-d0-l3" x="96" y="305" text-anchor="middle" fill="#6874a0" font-size="8.5"></text>
+        </g>
+
+        <!-- ── STAGE 1: MEMORY cx=323 ── -->
+        <g id="k-s1" opacity="0.3">
+          <circle cx="323" cy="175" r="45" fill="url(#g1)" stroke="#818cf8" stroke-width="2"/>
+          <circle cx="323" cy="175" r="45" fill="none" stroke="#818cf8" stroke-width="1.5" opacity="0">
+            <animate attributeName="r" values="45;60;45" dur="2.6s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.6s" repeatCount="indefinite"/>
+          </circle>
+          <text x="323" y="169" text-anchor="middle" font-size="24" dominant-baseline="middle">🧠</text>
+          <rect x="271" y="225" width="104" height="28" rx="6" fill="rgba(5,8,22,0.9)" stroke="#818cf8" stroke-width="1.5"/>
+          <text x="323" y="237" text-anchor="middle" fill="#818cf8" font-size="10" font-weight="700">MEMORY</text>
+          <text x="323" y="248" text-anchor="middle" fill="#4a5272" font-size="8">Kontext laden</text>
+        </g>
+        <g id="k-d1" opacity="0">
+          <rect x="247" y="262" width="152" height="52" rx="7" fill="rgba(5,8,22,0.95)" stroke="rgba(129,140,248,0.4)" stroke-width="1"/>
+          <rect x="247" y="262" width="152" height="3" rx="1" fill="#818cf8"/>
+          <text id="k-d1-l1" x="323" y="278" text-anchor="middle" fill="#818cf8" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace"></text>
+          <text id="k-d1-l2" x="323" y="293" text-anchor="middle" fill="#a9b7e6" font-size="9"></text>
+          <text id="k-d1-l3" x="323" y="305" text-anchor="middle" fill="#6874a0" font-size="8.5"></text>
+        </g>
+
+        <!-- ── STAGE 2: ROUTER cx=550 ── -->
+        <g id="k-s2" opacity="0.3">
+          <circle cx="550" cy="175" r="45" fill="url(#g2)" stroke="#c084fc" stroke-width="2"/>
+          <circle cx="550" cy="175" r="45" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0">
+            <animate attributeName="r" values="45;60;45" dur="2.2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <text x="550" y="169" text-anchor="middle" font-size="24" dominant-baseline="middle">🔀</text>
+          <rect x="498" y="225" width="104" height="28" rx="6" fill="rgba(5,8,22,0.9)" stroke="#c084fc" stroke-width="1.5"/>
+          <text x="550" y="237" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">ROUTER</text>
+          <text x="550" y="248" text-anchor="middle" fill="#4a5272" font-size="8">Agenten wählen</text>
+        </g>
+        <g id="k-d2" opacity="0">
+          <rect x="474" y="262" width="152" height="52" rx="7" fill="rgba(5,8,22,0.95)" stroke="rgba(192,132,252,0.4)" stroke-width="1"/>
+          <rect x="474" y="262" width="152" height="3" rx="1" fill="#c084fc"/>
+          <text id="k-d2-l1" x="550" y="278" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace"></text>
+          <text id="k-d2-l2" x="550" y="293" text-anchor="middle" fill="#a9b7e6" font-size="9"></text>
+          <text id="k-d2-l3" x="550" y="305" text-anchor="middle" fill="#6874a0" font-size="8.5"></text>
+        </g>
+
+        <!-- ── STAGE 3: POLICY cx=777 ── -->
+        <g id="k-s3" opacity="0.3">
+          <circle cx="777" cy="175" r="45" fill="url(#g3)" stroke="#34d399" stroke-width="2"/>
+          <circle cx="777" cy="175" r="45" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0">
+            <animate attributeName="r" values="45;60;45" dur="2.7s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.7s" repeatCount="indefinite"/>
+          </circle>
+          <text x="777" y="169" text-anchor="middle" font-size="24" dominant-baseline="middle">🛡️</text>
+          <rect x="725" y="225" width="104" height="28" rx="6" fill="rgba(5,8,22,0.9)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="777" y="237" text-anchor="middle" fill="#34d399" font-size="10" font-weight="700">POLICY</text>
+          <text x="777" y="248" text-anchor="middle" fill="#4a5272" font-size="8">Compliance prüfen</text>
+        </g>
+        <g id="k-d3" opacity="0">
+          <rect x="701" y="262" width="152" height="52" rx="7" fill="rgba(5,8,22,0.95)" stroke="rgba(52,211,153,0.4)" stroke-width="1"/>
+          <rect x="701" y="262" width="152" height="3" rx="1" fill="#34d399"/>
+          <text id="k-d3-l1" x="777" y="278" text-anchor="middle" fill="#34d399" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace"></text>
+          <text id="k-d3-l2" x="777" y="293" text-anchor="middle" fill="#a9b7e6" font-size="9"></text>
+          <text id="k-d3-l3" x="777" y="305" text-anchor="middle" fill="#6874a0" font-size="8.5"></text>
+        </g>
+
+        <!-- ── STAGE 4: SYNTHESIS cx=1004 ── -->
+        <g id="k-s4" opacity="0.3">
+          <circle cx="1004" cy="175" r="45" fill="url(#g4)" stroke="#fb923c" stroke-width="2.5"/>
+          <circle cx="1004" cy="175" r="45" fill="none" stroke="#fb923c" stroke-width="1.5" opacity="0">
+            <animate attributeName="r" values="45;60;45" dur="2.3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.3s" repeatCount="indefinite"/>
+          </circle>
+          <text x="1004" y="169" text-anchor="middle" font-size="24" dominant-baseline="middle">✨</text>
+          <rect x="952" y="225" width="104" height="28" rx="6" fill="rgba(5,8,22,0.9)" stroke="#fb923c" stroke-width="1.5"/>
+          <text x="1004" y="237" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="700">SYNTHESIS</text>
+          <text x="1004" y="248" text-anchor="middle" fill="#4a5272" font-size="8">Antwort formen</text>
+        </g>
+        <g id="k-d4" opacity="0">
+          <rect x="928" y="262" width="152" height="52" rx="7" fill="rgba(5,8,22,0.95)" stroke="rgba(251,146,60,0.4)" stroke-width="1"/>
+          <rect x="928" y="262" width="152" height="3" rx="1" fill="#fb923c"/>
+          <text id="k-d4-l1" x="1004" y="278" text-anchor="middle" fill="#fb923c" font-size="9" font-weight="700" font-family="JetBrains Mono,monospace"></text>
+          <text id="k-d4-l2" x="1004" y="293" text-anchor="middle" fill="#a9b7e6" font-size="9"></text>
+          <text id="k-d4-l3" x="1004" y="305" text-anchor="middle" fill="#6874a0" font-size="8.5"></text>
+        </g>
+
+        <!-- ── PROGRESS BAR ── -->
+        <rect x="50" y="325" width="1000" height="3" rx="1.5" fill="rgba(90,196,255,0.06)"/>
+        <rect id="k-progress" x="50" y="325" width="0" height="3" rx="1.5" fill="url(#k-prog-grad)"/>
+        <defs>
+          <linearGradient id="k-prog-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#5ac4ff"/>
+            <stop offset="40%"  stop-color="#c084fc"/>
+            <stop offset="100%" stop-color="#fb923c"/>
+          </linearGradient>
+        </defs>
+
+        <!-- ── OUTPUT BOX ── -->
+        <g id="k-output" opacity="0">
+          <!-- Curved path from Synthesis to output -->
+          <path id="k-arr-out" d="M1004,220 C1004,340 700,340 550,340" fill="none" stroke="rgba(251,146,60,0.5)" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arr-o)"/>
+          <rect x="50" y="345" width="1000" height="128" rx="12" fill="rgba(5,8,22,0.97)" stroke="rgba(251,146,60,0.45)" stroke-width="2" filter="url(#glow-s)"/>
+          <rect x="50" y="345" width="1000" height="4" rx="2" fill="url(#k-prog-grad)"/>
+          <text x="550" y="364" text-anchor="middle" fill="#fb923c" font-size="8.5" font-weight="700" font-family="JetBrains Mono,monospace" letter-spacing="1.5">ONE VOICE OUTPUT · KIMBA</text>
+          <text id="k-out0" x="550" y="387" text-anchor="middle" fill="#f5f7ff" font-size="12" font-weight="600"></text>
+          <text id="k-out1" x="550" y="407" text-anchor="middle" fill="#a9b7e6" font-size="11"></text>
+          <text id="k-out2" x="550" y="424" text-anchor="middle" fill="#6874a0" font-size="10"></text>
+          <!-- Metrics row inside output box -->
+          <g id="k-metrics" opacity="0">
+            <line x1="50" y1="438" x2="1050" y2="438" stroke="rgba(90,196,255,0.08)" stroke-width="1"/>
+            <text id="k-m-time"   x="160"  y="454" text-anchor="middle" fill="#4a5272" font-size="9" font-family="JetBrains Mono,monospace">⏱ —</text>
+            <text id="k-m-tokens" x="380"  y="454" text-anchor="middle" fill="#4a5272" font-size="9" font-family="JetBrains Mono,monospace">📊 Tokens: —</text>
+            <text id="k-m-agents" x="590"  y="454" text-anchor="middle" fill="#4a5272" font-size="9" font-family="JetBrains Mono,monospace">🤖 Agenten: —</text>
+            <text id="k-m-policy" x="810"  y="454" text-anchor="middle" fill="#34d399"  font-size="9" font-family="JetBrains Mono,monospace">🛡 DSGVO-konform ✓</text>
+            <text id="k-m-tone"   x="1000" y="454" text-anchor="middle" fill="#4a5272" font-size="9" font-family="JetBrains Mono,monospace">✨ Ton: —</text>
+          </g>
+        </g>
+
+        <!-- ── PHASE LABEL (top-left) ── -->
+        <rect x="20" y="16" width="0" height="0" rx="0" fill="none"/> <!-- invisible spacer, phase uses text below -->
+
+        <!-- ── TIMER (top-right of pipeline area) ── -->
+        <rect x="920" y="8" width="160" height="22" rx="5" fill="rgba(5,8,22,0.8)" stroke="rgba(90,196,255,0.12)" stroke-width="1"/>
+        <text id="k-timer" x="1000" y="23" text-anchor="middle" fill="#2a3562" font-size="9" font-family="JetBrains Mono,monospace">0.0s · Bereit</text>
+
+        <!-- ── PHASE BADGE (top-left) ── -->
+        <rect x="20" y="8" width="200" height="22" rx="5" fill="rgba(5,8,22,0.8)" stroke="rgba(90,196,255,0.12)" stroke-width="1"/>
+        <text id="k-phase" x="120" y="23" text-anchor="middle" fill="#2a3562" font-size="9" font-family="JetBrains Mono,monospace">Bereit — Frage eingeben</text>
+
+        <!-- Dots layer -->
+        <g id="k-dots"></g>
+      </svg>
+
+      <!-- Timer overlay (real DOM for easy update) is handled via SVG text -->
+    </div>
+
+    <div class="bottom-bar">
+      <div class="version-tag">KI-OS PIPELINE · KIMBA MOMENT · CLAUDE HAIKU</div>
+      <div class="ctrl-btns">
+        <button class="ctrl-btn" onclick="replayDemo()">↺ Demo</button>
+        <button class="ctrl-btn" id="btn-replay" style="display:none;" onclick="replayLast()">▶ Nochmal</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">← <a href="../index.html" style="color:var(--muted);text-decoration:none;">Simulations Hub</a> · KI-OS v6 · Kimba Moment Simulation</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ── Stage config ── */
+var STAGES = [
+  {id:'k-s0', cx:96,   color:'#5ac4ff', pipes:['k-pipe-01'], det:'k-d0', key:'intent'},
+  {id:'k-s1', cx:323,  color:'#818cf8', pipes:['k-pipe-12'], det:'k-d1', key:'memory'},
+  {id:'k-s2', cx:550,  color:'#c084fc', pipes:['k-pipe-23'], det:'k-d2', key:'router'},
+  {id:'k-s3', cx:777,  color:'#34d399', pipes:['k-pipe-34'], det:'k-d3', key:'policy'},
+  {id:'k-s4', cx:1004, color:'#fb923c', pipes:[],             det:'k-d4', key:'synthesis'}
+];
+
+/* cy=175 */
+var PIPE_COORDS = [
+  [142,175,277,175], [369,175,504,175],
+  [596,175,731,175], [823,175,958,175]
+];
+
+/* ── Demo scenarios ── */
+var DEMOS = [
+  {
+    question_display:'"Wie war unser Q3? Board-Briefing ready."',
+    stages:{
+      intent:    {label:'Controlling-Analyse',  detail:'Q3-Performance · Finanzkennzahlen', category:'controlling'},
+      memory:    {label:'4 Quellen geladen',    detail:'Q2-Basis · Board-Protokoll · KPI-Set', hits:4},
+      router:    {label:'Retail-Brain + Exec',  detail:'2 Agenten · Parallel-Modus aktiv', agents:['retail-brain','execution']},
+      policy:    {label:'DSGVO ✓ · Audit ✓',   detail:'PII-frei · EU-Datenquelle · geloggt', passed:true},
+      synthesis: {label:'Executive Tone · DE',  detail:'3 Quellen · Board-Format · PDF-ready', tone:'executive'}
+    },
+    answer:['Q3: Umsatz +12% · EBIT stabil · NPS +4.','3 strategische Handlungsfelder identifiziert.','Board-Deck exportbereit · 8 Slides ready.']
+  },
+  {
+    question_display:'"Welche Kunden haben das höchste Churn-Risiko?"',
+    stages:{
+      intent:    {label:'CRM-Analyse',          detail:'Churn-Prediction · Kundensegment', category:'analytics'},
+      memory:    {label:'6 Quellen geladen',    detail:'CRM-Daten · NPS · Support-History', hits:6},
+      router:    {label:'Research + Memory',    detail:'Datenanalyse · ML-Scoring aktiv', agents:['research','memory']},
+      policy:    {label:'DSGVO ✓ · PII mask.',  detail:'Kundendaten anonymisiert · EU ✓', passed:true},
+      synthesis: {label:'Analytical Tone · DE', detail:'Top-10-Liste · Score + Maßnahmen', tone:'analytical'}
+    },
+    answer:['Top-3-Risikokunden identifiziert (Score >0.8).','Hauptursache: fehlender Support-Kontakt >90d.','Handlungsempfehlung: Proaktives CSM-Outreach.']
+  },
+  {
+    question_display:'"Erstelle Wettbewerbsanalyse KI-Software 2025."',
+    stages:{
+      intent:    {label:'Strategy-Research',    detail:'Marktanalyse · Wettbewerbsumfeld', category:'strategy'},
+      memory:    {label:'3 Quellen geladen',    detail:'Vorherige Analysen · Benchmarks', hits:3},
+      router:    {label:'Research + Execution', detail:'Web-Suche · Report-Generator aktiv', agents:['research','execution']},
+      policy:    {label:'Quellen ✓ · DSGVO ✓', detail:'Externe Daten verifiziert · EU ✓', passed:true},
+      synthesis: {label:'Strategic Tone · DE',  detail:'Executive Summary · Marktdaten', tone:'strategic'}
+    },
+    answer:['Marktvolumen DACH 2025: €4.2 Mrd. CAGR +31%.','Top-3 Wettbewerber analysiert · KI-OS führend EU.','Vollbericht PDF + 12-Slide-Deck exportbereit.']
+  }
+];
+
+var NS='http://www.w3.org/2000/svg';
+var running=false, timers=[], demoIdx=0, lastScenario=null;
+var timerInterval=null, timerStart=0;
+
+function $(id){return document.getElementById(id);}
+function setText(id,t){var e=$(id);if(e)e.textContent=t||'';}
+function setPhase(t){setText('k-phase',t);}
+
+function fade(id,to,dur){
+  var el=$(id);if(!el)return;
+  var from=parseFloat(el.getAttribute('opacity')||'0'),diff=to-from,steps=Math.max(1,dur/16),i=0;
+  var iv=setInterval(function(){
+    i++;var v=Math.max(0,Math.min(1,from+diff*(i/steps)));
+    el.setAttribute('opacity',v.toFixed(2));if(i>=steps)clearInterval(iv);
+  },16);timers.push(iv);
+}
+
+function showLine(id,color){
+  var e=$(id);if(e){e.setAttribute('stroke',color);e.setAttribute('stroke-opacity','0.55');}
+}
+
+function delay(ms){return new Promise(function(r){var t=setTimeout(r,ms);timers.push(t);});}
+
+/* ── Dots ── */
+var dotsG=null;
+function getDots(){if(!dotsG)dotsG=$('k-dots');return dotsG;}
+function clearDots(){var g=getDots();if(g)while(g.firstChild)g.removeChild(g.firstChild);}
+
+function spawnDot(x1,y1,x2,y2,color,durationMs,startDelay,label){
+  var t=setTimeout(function(){
+    var g=getDots();if(!g)return;
+    var grp=document.createElementNS(NS,'g');
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('r',label?'7':'5');c.setAttribute('fill',color);
+    c.style.filter='drop-shadow(0 0 6px '+color+')';grp.appendChild(c);
+    var tr=document.createElementNS(NS,'circle');
+    tr.setAttribute('r','2.5');tr.setAttribute('fill',color);tr.setAttribute('opacity','0.3');grp.appendChild(tr);
+    if(label){
+      var txt=document.createElementNS(NS,'text');
+      txt.setAttribute('text-anchor','middle');txt.setAttribute('font-size','7.5');
+      txt.setAttribute('font-family','JetBrains Mono,monospace');txt.setAttribute('font-weight','700');
+      txt.setAttribute('fill',color);txt.textContent=label;grp.appendChild(txt);
+    }
+    g.appendChild(grp);
+    var dx=x2-x1,dy=y2-y1,steps=durationMs/16,s=0;
+    var anim=setInterval(function(){
+      s++;var p=s/steps;
+      var e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+      var tp=Math.max(0,p-.07),te=tp<.5?4*tp*tp*tp:1-Math.pow(-2*tp+2,3)/2;
+      var cx=x1+dx*e,cy=y1+dy*e;
+      c.setAttribute('cx',cx);c.setAttribute('cy',cy);
+      tr.setAttribute('cx',x1+dx*te);tr.setAttribute('cy',y1+dy*te);
+      if(label){var tEl=grp.querySelector('text');if(tEl){tEl.setAttribute('x',cx);tEl.setAttribute('y',cy-11);}}
+      var op=p<.08?p/.08:p>.9?(1-p)/.1:1;
+      grp.setAttribute('opacity',Math.max(0,Math.min(1,op)).toFixed(2));
+      if(s>=steps){clearInterval(anim);if(g&&grp.parentNode)g.removeChild(grp);}
+    },16);timers.push(anim);
+  },startDelay);timers.push(t);
+}
+
+/* Send multiple dots along a path */
+function spawnDots(x1,y1,x2,y2,color,count,intv,dur,startD,label){
+  for(var i=0;i<count;i++) spawnDot(x1,y1,x2,y2,color,dur,startD+i*intv,i===0?label:null);
+}
+
+/* ── Timer ── */
+function startTimer(){
+  timerStart=Date.now();
+  timerInterval=setInterval(function(){
+    var s=((Date.now()-timerStart)/1000).toFixed(1);
+    setText('k-timer',s+'s · läuft…');
+  },100);
+  timers.push(timerInterval);
+}
+function stopTimer(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  var s=((Date.now()-timerStart)/1000).toFixed(1);
+  setText('k-timer',s+'s · fertig ✓');
+}
+
+/* ── Progress bar ── */
+function setProgress(pct,dur){
+  var bar=$('k-progress');if(!bar)return;
+  var target=pct*10; /* 1000px * pct */
+  var current=parseFloat(bar.getAttribute('width')||'0');
+  var diff=target-current,steps=Math.max(1,dur/16),i=0;
+  var iv=setInterval(function(){
+    i++;var v=current+diff*(i/steps);
+    bar.setAttribute('width',Math.max(0,Math.min(1000,v)).toFixed(1));
+    if(i>=steps)clearInterval(iv);
+  },16);timers.push(iv);
+}
+
+/* ── Stage activation ── */
+function activateStage(idx,d){
+  var st=$(STAGES[idx].id);if(st)st.setAttribute('opacity','1');
+  /* Glow pulse on circle */
+  var circle=st?st.querySelector('circle'):null;
+  if(circle){
+    var orig=circle.getAttribute('stroke');
+    circle.setAttribute('stroke-width','3.5');
+    setTimeout(function(){circle.setAttribute('stroke-width','2');},500);
+  }
+  /* Pipe after this stage */
+  if(idx<4) showLine('k-pipe-0'+(idx)+(idx+1), [
+    '#5ac4ff','#818cf8','#c084fc','#34d399'
+  ][idx]);
+
+  /* Detail card */
+  if(d){
+    var stg=STAGES[idx];
+    var di=$(stg.det);if(!di)return;
+    setText(stg.det+'-l1', d.label||'');
+    setText(stg.det+'-l2', d.detail||'');
+    setText(stg.det+'-l3', d.category||d.tone||'');
+    fade(stg.det,1,350);
+  }
+}
+
+/* ── Reset ── */
+function reset(){
+  clearDots();
+  STAGES.forEach(function(s){
+    var e=$(s.id);if(e)e.setAttribute('opacity','0.3');
+    var d=$(s.det);if(d)d.setAttribute('opacity','0');
+  });
+  ['k-pipe-01','k-pipe-12','k-pipe-23','k-pipe-34'].forEach(function(id){
+    var e=$(id);if(e){e.setAttribute('stroke','rgba(0,0,0,0)');e.setAttribute('stroke-opacity','0');}
+  });
+  var arr=$('k-arr-q');if(arr)arr.setAttribute('stroke','rgba(90,196,255,0)');
+  var out=$('k-output');if(out)out.setAttribute('opacity','0');
+  var met=$('k-metrics');if(met)met.setAttribute('opacity','0');
+  var bar=$('k-progress');if(bar)bar.setAttribute('width','0');
+  setText('k-out0','');setText('k-out1','');setText('k-out2','');
+  setPhase('Bereit — Frage eingeben');
+  setText('k-timer','0.0s · Bereit');
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+}
+
+/* ── Main play ── */
+async function play(sc){
+  if(running)return;running=true;
+  timers.forEach(function(id){try{clearTimeout(id);}catch(e){}try{clearInterval(id);}catch(e){}});
+  timers=[];reset();
+
+  startTimer();
+
+  /* Show question */
+  setText('k-qtext', sc.question_display||'');
+  var qa=$('k-arr-q');if(qa)qa.setAttribute('stroke','rgba(90,196,255,0.5)');
+  setPhase('PHASE 1 · Intent');
+  setProgress(10, 400);
+
+  /* Particle: question → Intent */
+  spawnDots(96,62,96,129,'#5ac4ff',3,160,600,0,'Frage',false);
+  await delay(700);
+
+  /* Intent */
+  activateStage(0, sc.stages&&sc.stages.intent);
+  setProgress(22,300);
+  await delay(650);
+
+  setPhase('PHASE 2 · Memory');
+  spawnDots(142,175,277,175,'#5ac4ff',4,150,550,0,'Intent',false);
+  await delay(650);
+
+  /* Memory */
+  activateStage(1, sc.stages&&sc.stages.memory);
+  setProgress(40,300);
+  await delay(650);
+
+  setPhase('PHASE 3 · Router');
+  spawnDots(369,175,504,175,'#818cf8',4,150,550,0,'Context',false);
+  await delay(650);
+
+  /* Router */
+  activateStage(2, sc.stages&&sc.stages.router);
+  setProgress(58,300);
+  await delay(650);
+
+  setPhase('PHASE 4 · Policy');
+  spawnDots(596,175,731,175,'#c084fc',4,150,550,0,'Route',false);
+  await delay(650);
+
+  /* Policy */
+  activateStage(3, sc.stages&&sc.stages.policy);
+  setProgress(76,300);
+  await delay(650);
+
+  setPhase('PHASE 5 · Synthesis');
+  spawnDots(823,175,958,175,'#34d399',4,150,550,0,'OK ✓',false);
+  await delay(650);
+
+  /* Synthesis */
+  activateStage(4, sc.stages&&sc.stages.synthesis);
+  setProgress(92,300);
+  await delay(600);
+
+  /* Curved path to output */
+  setPhase('OUTPUT · One Voice');
+  spawnDots(1004,220,550,345,'#fb923c',5,130,700,0,'Output',false);
+  await delay(500);
+
+  /* Output box */
+  fade('k-output',1,500);
+  setProgress(100,400);
+  await delay(300);
+
+  /* Typewriter output lines */
+  var ans=sc.answer||['Ergebnis wird geladen.','',''];
+  await typeText('k-out0', ans[0]||'', 22);
+  await delay(120);
+  await typeText('k-out1', ans[1]||'', 20);
+  await delay(120);
+  await typeText('k-out2', ans[2]||'', 18);
+
+  /* Metrics */
+  await delay(200);
+  var st=sc.stages||{};
+  var agents=(st.router&&st.router.agents)||[];
+  setText('k-m-agents','🤖 Agenten: '+(agents.length||2)+' aktiv');
+  setText('k-m-tone','✨ Ton: '+(st.synthesis&&st.synthesis.tone||'executive'));
+  setText('k-m-tokens','📊 ~'+(Math.floor(Math.random()*400)+500)+' Tokens');
+  fade('k-metrics',1,400);
+  stopTimer();
+  setText('k-m-time','⏱ '+$('k-timer').textContent.split(' ')[0]);
+
+  running=false;
+}
+
+/* ── Typewriter ── */
+function typeText(id,text,msPerChar){
+  return new Promise(function(resolve){
+    var el=$(id);if(!el){resolve();return;}
+    var i=0;
+    function tick(){
+      if(i>=text.length){resolve();return;}
+      el.textContent=text.slice(0,++i);
+      var t=setTimeout(tick,msPerChar);timers.push(t);
+    }
+    tick();
+  });
+}
+
+/* ── Public ── */
+window.replayDemo=function(){
+  timers.forEach(function(id){try{clearTimeout(id);}catch(e){}try{clearInterval(id);}catch(e){}});
+  timers=[];running=false;clearDots();
+  play(DEMOS[demoIdx%DEMOS.length]);demoIdx++;
+};
+window.replayLast=function(){
+  if(!lastScenario)return;
+  timers.forEach(function(id){try{clearTimeout(id);}catch(e){}try{clearInterval(id);}catch(e){}});
+  timers=[];running=false;clearDots();play(lastScenario);
+};
+
+/* ── API ── */
+function setStatus(html,spin){
+  var b=$('status-bar');if(!b)return;
+  b.innerHTML=(spin?'<div class="spinner"></div>':'')+html;
+}
+window.runKimba=function(){
+  var inp=$('q-input');
+  var q=(inp?inp.value:'').trim();
+  if(!q){setStatus('<span style="color:#fb7185">Bitte eine Frage eingeben.</span>',false);inp&&inp.focus();return;}
+  var btn=$('btn-run');if(btn){btn.disabled=true;btn.textContent='…läuft';}
+  setStatus('KIMBA analysiert…',true);
+  fetch('/simulations/kimba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(btn){btn.disabled=false;btn.textContent='▶ Senden';}
+    if(!data.success){setStatus('<span style="color:#fb7185">Fehler: '+(data.error||'?')+'</span>',false);return;}
+    var jp=$('json-panel'),jd=$('json-display');
+    if(jp&&jd){jd.textContent=JSON.stringify(data.scenario,null,2);jp.style.display='block';jp.open=false;}
+    var u=data.usage||{};
+    var tm=u.input_tokens?' · '+u.input_tokens+' in/'+u.output_tokens+'out':'';
+    setStatus('<span style="color:#34d399">✓ Analyse fertig'+tm+'</span>',false);
+    lastScenario=data.scenario;
+    var br=$('btn-replay');if(br)br.style.display='';
+    timers.forEach(function(id){try{clearTimeout(id);}catch(e){}try{clearInterval(id);}catch(e){}});
+    timers=[];running=false;clearDots();play(data.scenario);
+  })
+  .catch(function(err){
+    if(btn){btn.disabled=false;btn.textContent='▶ Senden';}
+    setStatus('<span style="color:#fb7185">Netzwerkfehler: '+err.message+'</span>',false);
+  });
+};
+window.setQ=function(t){var i=$('q-input');if(i){i.value=t;i.focus();}};
+var inp2=$('q-input');
+if(inp2)inp2.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();window.runKimba();}});
+
+/* ── Canvas particles ── */
+(function(){
+  var c=$('sim-canvas');if(!c)return;
+  var w=c.parentElement,ctx=c.getContext('2d');
+  function resize(){c.width=w.offsetWidth;c.height=Math.max(w.offsetHeight||0,500);}
+  resize();window.addEventListener('resize',resize);
+  var pts=[];for(var i=0;i<28;i++)pts.push({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.1+.3});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;
+      if(p.y<0)p.y=c.height;if(p.y>c.height)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(90,196,255,0.16)';ctx.fill();
+      pts.forEach(function(q){var dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<75){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
+          ctx.strokeStyle='rgba(74,141,255,'+(0.05*(1-d/75))+')';ctx.lineWidth=.5;ctx.stroke();}
+      });
+    });requestAnimationFrame(draw);
+  }draw();
+})();
+
+/* ── Auto-start demo ── */
+var ob=new IntersectionObserver(function(e){if(e[0].isIntersecting){ob.disconnect();setTimeout(replayDemo,700);}},{threshold:0.2});
+var svgEl=$('sim-svg');if(svgEl)ob.observe(svgEl);
+
+})();
+</script>
+</body>
+</html>

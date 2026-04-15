@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KI-OS Simulations Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050816;--text:#f5f7ff;--text2:#a9b7e6;--muted:#6874a0;--accent:#5ac4ff;--font:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+body{background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(79,142,247,.12) 0%,transparent 60%),var(--bg);}
+.page{max-width:1100px;margin:0 auto;padding:52px 28px 80px;}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid rgba(90,196,255,.28);background:rgba(90,196,255,.08);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px rgba(90,196,255,.7);}
+h1{margin:16px 0 10px;font-size:42px;letter-spacing:-1.5px;line-height:1.06;}
+.lead{color:var(--text2);font-size:16px;max-width:680px;line-height:1.65;margin-bottom:52px;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.card{background:linear-gradient(145deg,#07091c,#030610);border:1px solid rgba(90,196,255,.14);border-radius:18px;padding:28px;cursor:pointer;transition:all .2s;text-decoration:none;color:inherit;display:block;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;inset:0;border-radius:18px;opacity:0;transition:opacity .2s;background:radial-gradient(ellipse 80% 80% at 50% 0%,rgba(90,196,255,.07),transparent);}
+.card:hover{border-color:rgba(90,196,255,.35);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.card:hover::before{opacity:1;}
+.card-icon{font-size:36px;margin-bottom:18px;display:block;}
+.card-tag{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+.card h2{font-size:19px;letter-spacing:-.4px;margin-bottom:8px;line-height:1.2;}
+.card p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:18px;}
+.card-meta{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-family:var(--mono);font-size:9px;letter-spacing:.8px;font-weight:700;}
+.badge-live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+.badge-soon{background:rgba(90,196,255,.08);color:var(--muted);border:1px solid rgba(90,196,255,.12);}
+.card-coming{opacity:.5;cursor:default;}
+.card-coming:hover{transform:none;box-shadow:none;border-color:rgba(90,196,255,.14);}
+@media(max-width:800px){.grid{grid-template-columns:1fr;}.page{padding:36px 18px 60px;} h1{font-size:30px;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow"><span class="dot"></span> KI-OS Interactive</div>
+  <h1>Simulations Hub</h1>
+  <p class="lead">Erlebe KI-OS in Aktion. Jede Simulation erklärt ein Kernsystem — visuell, interaktiv, in Echtzeit durch KI analysiert.</p>
+
+  <div class="grid">
+
+    <!-- Kimba Moment -->
+    <a href="kimba-moment/index.html" class="card">
+      <span class="card-icon">⚡</span>
+      <div class="card-tag" style="color:#5ac4ff;">Pipeline · 3 Sekunden</div>
+      <h2>The Kimba Moment</h2>
+      <p>Was passiert wenn du auf Senden drückst? Intent → Memory → Router → Policy → Antwort — live visualisiert.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-live">● Live</span>
+        <span class="card-meta">Claude Haiku · ~1s</span>
+      </div>
+    </a>
+
+    <!-- Policy Gate -->
+    <div class="card card-coming">
+      <span class="card-icon">🛡️</span>
+      <div class="card-tag" style="color:#fbbf24;">Compliance · DSGVO</div>
+      <h2>Policy Gate</h2>
+      <p>Jede Antwort passiert 5 Compliance-Schleusen. PII-Detection, DSGVO-Check, Trust-Score — vollautomatisch.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-soon">Coming Soon</span>
+        <span class="card-meta">Enterprise · Legal</span>
+      </div>
+    </div>
+
+    <!-- Connector Galaxy -->
+    <a href="connector-galaxy/index.html" class="card">
+      <span class="card-icon">🌐</span>
+      <div class="card-tag" style="color:#a78bfa;">Ecosystem · 36+ Konnektoren</div>
+      <h2>Connector Galaxy</h2>
+      <p>SAP · Salesforce · Teams · SharePoint — KI-OS verbindet sich mit deiner bestehenden Infrastruktur.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-live">● Live</span>
+        <span class="card-meta">Claude Haiku · ~1s</span>
+      </div>
+    </a>
+
+    <!-- AgentMesh -->
+    <a href="../AgentMesh/index.html" class="card">
+      <span class="card-icon">🕸️</span>
+      <div class="card-tag" style="color:#22c55e;">Multi-Agent · Parallel</div>
+      <h2>AgentMesh</h2>
+      <p>Supervisor koordiniert 7 Agenten gleichzeitig. Planner, Research, Memory, Execution — alle parallel.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-live">● Live</span>
+        <span class="card-meta">Claude Haiku · ~1s</span>
+      </div>
+    </a>
+
+    <!-- DAG Flow -->
+    <div class="card card-coming">
+      <span class="card-icon">🔀</span>
+      <div class="card-tag" style="color:#fb923c;">Execution · DAG</div>
+      <h2>DAG Flow</h2>
+      <p>Eine Aufgabe explodiert in parallele Sub-Tasks. Abhängigkeiten, Merge-Punkte, kritischer Pfad — live.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-soon">Coming Soon</span>
+        <span class="card-meta">Technical · Ops</span>
+      </div>
+    </div>
+
+    <!-- Retail Brain -->
+    <div class="card card-coming">
+      <span class="card-icon">🏪</span>
+      <div class="card-tag" style="color:#fb7185;">Retail · KPIs</div>
+      <h2>Retail Brain</h2>
+      <p>OOS-Risiken, Promo-Performance, Bestandsoptimierung — der KI-OS Retail-Brain denkt wie ein Controller.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="badge badge-soon">Coming Soon</span>
+        <span class="card-meta">Retail · C-Level</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

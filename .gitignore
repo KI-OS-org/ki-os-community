@@ -1,0 +1,219 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+frontend/orbit-control/node_modules/
+scripts/updates-server/node_modules/
+
+# ── Build & Cache ──────────────────────────────────────────────
+.next/
+dist/
+coverage/
+.turbo/
+out/
+
+# ── Secrets & Credentials ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+frontend/orbit-control/.env.local
+Secrets.bat
+*.pem
+*.p12
+*.pfx
+*.key
+.ki-os-ftp.env
+.blauer-elefant.pem
+
+# ── Claude / AI Memory (lokal, nie public) ────────────────────
+.claude/
+.KI-Builder/
+
+# ── Interne Security-Scripts & Konfiguration ──────────────────
+.gitleaks.toml
+scripts/github-safe-push.js
+scripts/ki-os-permissions-hook.js
+scripts/setup-security-hook.ps1
+scripts/setup-security-hook.sh
+ki-os-permissions.json
+
+# ── Interne Session-Dokumente ─────────────────────────────────
+GITHUB_SESSION_*.md
+SESSION_*.md
+*_SESSION_*.md
+
+# ── KI-OS Runtime State (interne Daten, nie public) ───────────
+.ki-os-agents.json
+.ki-os-approvals.json
+.ki-os-audit.ndjson
+.ki-os-circuit-breaker.json
+.ki-os-dag-registry.json
+.ki-os-dlq.json
+.ki-os-economic-optimizer.json
+.ki-os-email-queue.json
+.ki-os-federated-outcomes.json
+.ki-os-incidents.json
+.ki-os-instance.json
+.ki-os-memory.json
+.ki-os-mesh-runs.json
+.ki-os-packs.json
+.ki-os-routing-decisions.json
+.ki-os-routing-scorecards.json
+.ki-os-runtime-store.json
+.ki-os-supervisor-escalations.json
+.ki-os-supervisor-recoveries.json
+.ki-os-tenants.json
+.ki-os-ui-runtime.json
+.ki-os-users.json
+.ki-os-version
+frontend/orbit-control/.ki-os-ui-runtime.json
+.test-federated-outcomes.json
+.test-routing-scorecards.json
+.tmp-agentmesh-*.json
+
+# ── Swarm Memory & Flags ──────────────────────────────────────
+.swarm-memory/
+first-run.flag
+
+# ── Logs & Binaries ───────────────────────────────────────────
+*.log
+*.ndjson
+*.zip
+*.7z
+*.pid
+*.tsbuildinfo
+node.exe
+sync.log
+
+# ── Sync Scripts (Windows-only) ───────────────────────────────
+sync.bat
+
+# ── Enterprise-Features (nur Enterprise Edition) ──────────────
+tauri/
+# Backend Enterprise Services
+backend/services/dag/
+backend/services/federation/
+backend/services/heygen*
+backend/services/retail-brain/
+# Frontend Enterprise Components
+frontend/orbit-control/app/**/federation/
+frontend/orbit-control/app/**/heygen/
+frontend/orbit-control/app/(protected)/strategy/economic-federation/
+frontend/orbit-control/components/economic-federation/
+frontend/orbit-control/components/retail/
+frontend/orbit-control/lib/adapters/federation.ts
+frontend/orbit-control/tests/f14*
+# Enterprise Docs
+docs/ENTERPRISE_*.md
+docs/GHOST_CONTROL_ENTERPRISE*.md
+docs/SPRINT_F_FEDERATION*.md
+docs/R10_ENTERPRISE*.md
+docs/R19_MULTI_TENANT*.md
+docs/R22_RETAIL*.md
+# Enterprise Tests (import gitignored code or test Enterprise-only routes)
+tests/federation-*.test.js
+tests/r10-enterprise*.test.js
+tests/r19-*.test.js
+tests/r22-*.test.js
+tests/retail-brain.test.js
+tests/aws-handler.test.js
+tests/dag-studio.test.js
+tests/r20-vertical-pack-framework.test.js
+tests/r21-retail-ecommerce.test.js
+tests/r23-federated-outcome-network.test.js
+tests/r24-economic-self-optimization.test.js
+tests/voice.control.test.js
+
+# ── Interne Dokumente & Buchinhalt ────────────────────────────
+Dokumentation/
+buch/
+_archive/
+Web/
+
+# ── Temporäre & system-spezifische Dateien ────────────────────
+dir1
+*.lnk
+
+# ── Sync-Config (enthält interne Hostnamen) ───────────────────
+ki-os-sync.conf
+
+# ── macOS ─────────────────────────────────────────────────────
+.DS_Store
+.localized
+
+# ── Alle internen Docs (161 Dateien, hauptsächlich intern) ───
+# Nur docs/public/ wird später als kuratierte Public-Docs Quelle genutzt
+docs/
+
+# ── AWS / Cloud / Lambda (Enterprise Only) ────────────────────
+infrastructure/
+runtime/aws/
+runtime/.ki-os-connectors.json
+backend/lambda.js
+backend/setup-pki-tables.js
+backend/services/connectors/profiles/s3.json
+
+# ── Interne Backend-Configs ────────────────────────────────────
+backend/config/governance.policies*.json
+
+# ── Server-Daten (Updates-Server) ─────────────────────────────
+scripts/updates-server/data/
+
+# ── Interne Entwicklungs-Scripts (nicht für die Öffentlichkeit) ──
+# Buch & Schreib-Tools
+scripts/buch-*.ps1
+scripts/export-buch-*.js
+scripts/export-buch-*.ps1
+scripts/final-review-buch.js
+scripts/finale-ueberarbeitung.js
+scripts/update-buch-kapitel.js
+scripts/ueberarbeite-buch.js
+scripts/entferne-wiederholungen.js
+scripts/stil-uebertragung.js
+# AWS & Deployment (interne Infrastruktur)
+scripts/aws-setup-*.sh
+scripts/deploy-aws.*
+# Multi-Agent & AI-Council (intern)
+scripts/arch-council.js
+scripts/multi-agent-testplan.js
+scripts/qwen-build-tests.js
+scripts/qwen-chat.js
+scripts/model-benchmark.js
+scripts/model-compare.js
+scripts/test-dashscope.js
+scripts/test-openrouter-qwen.js
+scripts/setup-dashscope.js
+# Interne Testläufe (versionierte History)
+scripts/full-stack-smoke-*.js
+scripts/full-regression.js
+scripts/release-gate-*.js
+scripts/api-route-proof-*.js
+scripts/archive-legacy-*.js
+scripts/run-r30-1-regression-proof.sh
+# Interne Generator-Scripts
+scripts/generate-blauer-elefant.js
+scripts/generate-gate-hashes.js
+# Passwort-Reset & interne Verwaltung
+scripts/reset-admin-password.js
+scripts/update-kimba-terminology.js
+scripts/release-v1.1.0*
+# Interne Tests & QA
+scripts/build-tests.js
+scripts/qa-preflight.js
+scripts/smoke.js
+scripts/optimize-install.bat
+scripts/run-e2e-tests.bat
+scripts/run-unit-tests.bat
+scripts/webhook-smoke-scenario.js
+scripts/webhook-stub-server.js
+# Updates-Server & Status-Page (interne Services)
+scripts/updates-server/
+scripts/status-page/
+
+# Local artifacts
+.qwen/
+KI-OS2.bat
+KIOSbl.bat
+.ArchiveServiceTemp*
+
+# Internal services — nicht auf GitHub
+backend/services/core/system-view.service.js
+docs/SYSTEM-VIEW*.md

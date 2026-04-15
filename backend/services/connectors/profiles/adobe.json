@@ -1,0 +1,31 @@
+{
+  "profileId": "adobe",
+  "tier": "enterprise",
+  "name": "Adobe Experience Cloud",
+  "category": "marketing",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "apikey",
+  "capabilities": ["campaign.trigger", "campaign.read", "analytics.read", "assets.read"],
+  "webhookPattern": "https://mc.adobe.io/{orgId}/{module}/webhook",
+  "headers": {
+    "Content-Type": "application/json",
+    "x-api-key": "{clientId}",
+    "Authorization": "Bearer {accessToken}",
+    "x-gw-ims-org-id": "{orgId}"
+  },
+  "events": [
+    "campaign.delivery.sent", "campaign.delivery.failed",
+    "analytics.report.ready", "assets.published"
+  ],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "event": { "type": "string" },
+      "imsOrgId": { "type": "string" },
+      "data": { "type": "object" },
+      "_embedded": { "type": "object" }
+    }
+  },
+  "docs": "https://developer.adobe.com/experience-cloud/experience-manager-apis/guides/events/"
+}

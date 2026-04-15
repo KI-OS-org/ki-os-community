@@ -1,0 +1,26 @@
+{
+  "profileId": "custom",
+  "tier": "community",
+  "name": "Custom / Eigene URL",
+  "category": "custom",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "none",
+  "capabilities": ["webhook.receive"],
+  "webhookPattern": "https://{host}/{path}",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "events": ["custom.event"],
+  "payloadSchema": {
+    "type": "object",
+    "description": "Beliebige JSON-Struktur",
+    "properties": {
+      "event":     { "type": "string" },
+      "payload":   { "type": "object" },
+      "timestamp": { "type": "string", "format": "date-time" }
+    }
+  },
+  "notes": "Vollständig konfigurierbar. Auth-Typ, Capabilities und Endpoint-URL werden im Connector-Wizard gesetzt.",
+  "docs": null
+}

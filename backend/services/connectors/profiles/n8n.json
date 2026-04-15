@@ -1,0 +1,32 @@
+{
+  "profileId": "n8n",
+  "tier": "community",
+  "name": "n8n",
+  "category": "automation",
+  "protocol": "mcp",
+  "trustLevel": "standard",
+  "authType": "bearer",
+  "capabilities": ["automation.trigger", "automation.receive", "workflow.execute", "workflow.manage"],
+  "webhookPattern": "https://{n8nHost}/webhook/{webhookId}",
+  "webhookPatternTest": "https://{n8nHost}/webhook-test/{webhookId}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {apiKey}"
+  },
+  "events": [
+    "workflow.triggered", "workflow.completed", "workflow.error", "node.executed"
+  ],
+  "payloadSchema": {
+    "type": "object",
+    "description": "n8n Webhook-Node empfängt beliebige JSON-Daten als $json",
+    "properties": {
+      "event":     { "type": "string" },
+      "payload":   { "type": "object" },
+      "timestamp": { "type": "string", "format": "date-time" },
+      "runId":     { "type": "string" }
+    }
+  },
+  "selfHosted": true,
+  "notes": "n8n kann self-hosted (localhost:5678) oder n8n.cloud betrieben werden. Webhook-URL im n8n-Editor unter 'Webhook'-Node kopieren. Test-URL und Produktions-URL sind getrennt.",
+  "docs": "https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/"
+}
