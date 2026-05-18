@@ -186,59 +186,59 @@ The EU AI Act framework is natively built-in but remains fully adaptable. KI-OS 
 
 ---
 
-## 🎉 NEW in v1.28.0 — Agent-Revolution
+## 🎉 NEW in v1.28.0 — Agent Revolution
 
-**Hierarchische Teams, Browser-Automation & Auto-Learning**
+**Hierarchical Teams, Browser Automation & Auto-Learning**
 
 ### 🌐 Browser-Use Tool (Playwright + Firecrawl)
 
-**Autonome Browser-Interaktion für KI-Agenten.**
+**Autonomous browser interaction for AI agents.**
 
-KI-OS kann jetzt Webseiten öffnen, navigieren, klicken, Text eingeben, Screenshots machen und Inhalte scrapen. Vollständig integriert mit Firecrawl für Web-Suche und Scraping.
+KI-OS can now open web pages, navigate, click, type, take screenshots and scrape content. Fully integrated with Firecrawl for web search and scraping.
 
 **Features:**
-- ✅ **8 Browser-Tools:** `navigate`, `click`, `fill`, `screenshot`, `scroll`, `wait`, `scrape`, `search`
-- ✅ **Security:** Domain-Allowlist, Rate-Limiting (10/Min), Timeout (30s)
-- ✅ **Privacy:** Audit-Redaction für sensible Daten
-- ✅ **Firecrawl-Integration:** Web-Scraping und Websuche
-- ✅ **Graceful Shutdown:** Cleanup-Hooks bei Server-Stop
+- ✅ **8 Browser Tools:** `navigate`, `click`, `fill`, `screenshot`, `scroll`, `wait`, `scrape`, `search`
+- ✅ **Security:** Domain allowlist, rate-limiting (10/min), timeout (30s)
+- ✅ **Privacy:** Audit-redaction for sensitive data
+- ✅ **Firecrawl Integration:** Web scraping and web search
+- ✅ **Graceful Shutdown:** Cleanup hooks on server stop
 
-**Use-Cases:**
-- Wettbewerbsanalyse (Preise scrapen)
-- Formular-Ausfüllen (Automatisierte Anmeldungen)
-- Screenshot-Dokumentation (Compliance)
-- Web-Research (Über einfache Suche hinaus)
+**Use Cases:**
+- Competitive analysis (price scraping)
+- Form filling (automated registrations)
+- Screenshot documentation (compliance)
+- Web research (beyond simple search)
 
 ```bash
 # Installation
 npm install playwright
 npx playwright install chromium
 
-# .env (optional für Scraping)
+# .env (optional, for scraping)
 FIRECRAWL_API_KEY=fc_xxx
 ```
 
 ---
 
-### 🧠 Reflection-Engine (Auto-Optimization)
+### 🧠 Reflection Engine (Auto-Optimization)
 
-**Automatische Selbst-Optimierung nach jedem Agent-Run.**
+**Automatic self-optimization after every agent run.**
 
-KI-OS bewertet jetzt automatisch jeden Run und generiert Learnings für zukünftige Tasks. Das System lernt kontinuierlich dazu und wird mit jeder Ausführung besser.
+KI-OS now automatically evaluates every run and generates learnings for future tasks. The system continuously improves with each execution.
 
 **Features:**
 - ✅ **Scorecard:** Quality (0.4), Cost (0.2), Latency (0.2), Tool-Choice (0.2)
-- ✅ **LLM-basierte Reflection:** "Was gut? Was schlecht? Nächste Zeit besser!"
-- ✅ **Swarm Memory Integration:** Learnings automatisch speichern
-- ✅ **API-Endpoints:** `/api/reflection/evaluate`, `/api/reflection/learnings`, `/api/reflection/stats`
-- ✅ **AgentMesh-Integration:** Automatisch nach jedem Run
+- ✅ **LLM-based Reflection:** What worked? What failed? Do better next time.
+- ✅ **Swarm Memory Integration:** Learnings stored automatically
+- ✅ **API Endpoints:** `/api/reflection/evaluate`, `/api/reflection/learnings`, `/api/reflection/stats`
+- ✅ **AgentMesh Integration:** Triggered automatically after every run
 
-**Learning-Format:**
+**Learning Format:**
 ```json
 {
-  "whatWorked": ["Web-Suche war präzise", "Memory-Recall relevant"],
-  "whatFailed": ["Provider-Wahl zu teuer"],
-  "nextTime": ["Verwende Qwen für ähnliche Tasks"],
+  "whatWorked": ["Web search was precise", "Memory recall relevant"],
+  "whatFailed": ["Provider choice too expensive"],
+  "nextTime": ["Use Qwen for similar tasks"],
   "savedCosts": 0.50,
   "improvedLatency": 2000
 }
@@ -246,65 +246,65 @@ KI-OS bewertet jetzt automatisch jeden Run und generiert Learnings für zukünft
 
 ---
 
-### 📹 Session-Recording (mit Compression)
+### 📹 Session Recording (with Compression)
 
-**Vollständige Aufzeichnung + Replay von Agent-Sessions.**
+**Full recording + replay of agent sessions.**
 
-Jede Session wird aufgezeichnet, zu Learnings komprimiert und kann bei Bedarf replayt werden. Perfekt für Debugging, Training und Compliance.
+Every session is recorded, compressed into learnings, and can be replayed on demand. Ideal for debugging, training, and compliance.
 
 **Features:**
-- ✅ **Full Session Recording:** Alle Steps, Events, Costs
-- ✅ **LLM-Compression:** Prompt → Learning (Zusammenfassung)
-- ✅ **Learning-Extraction:** `whatWorked`, `whatFailed`, `nextTime`
-- ✅ **Replay-Funktionalität:** Debugging von fehlgeschlagenen Runs
-- ✅ **Auto-Cleanup:** 30 Tage Retention
+- ✅ **Full Session Recording:** All steps, events, costs
+- ✅ **LLM Compression:** Prompt → Learning (summary)
+- ✅ **Learning Extraction:** `whatWorked`, `whatFailed`, `nextTime`
+- ✅ **Replay:** Debug failed runs step by step
+- ✅ **Auto-Cleanup:** 30-day retention
 
-**Use-Cases:**
-- Debugging von fehlgeschlagenen Runs
-- Training neuer Agenten
-- Compliance-Audits
-- Performance-Optimierung
+**Use Cases:**
+- Debugging failed runs
+- Training new agents
+- Compliance audits
+- Performance optimization
 
 ---
 
 ### 👥 Hierarchical Agents (Manager/Worker/Specialist)
 
-**Team-basierte Agent-Architektur für komplexe Tasks.**
+**Team-based agent architecture for complex tasks.**
 
-Statt einzelner Agenten arbeitet jetzt ein ganzes Team: Manager plant und delegiert, Worker führen aus, Specialists bringen Domain-Expertise ein.
+Instead of a single agent, a full team works together: Manager plans and delegates, Workers execute, Specialists bring domain expertise.
 
-**Rollen:**
-- ✅ **MANAGER:** Empfängt Task, plant Subtasks, delegiert, synthetisiert Ergebnis
-- ✅ **WORKER:** Führt generische Tasks aus (günstig, schnell)
-- ✅ **SPECIALIST:** Domain-Experte (research, coding, writing, review)
+**Roles:**
+- ✅ **MANAGER:** Receives task, plans subtasks, delegates, synthesizes result
+- ✅ **WORKER:** Executes generic tasks (cost-efficient, fast)
+- ✅ **SPECIALIST:** Domain expert (research, coding, writing, review)
 
-**Bidding-System:**
-- Worker bieten auf Tasks (Kosten vs. Qualität)
-- Economic Router entscheidet basierend auf Score
-- Winner nimmt Task
+**Bidding System:**
+- Workers bid on tasks (cost vs. quality)
+- Economic Router decides based on score
+- Winner takes the task
 
 **API:**
 ```bash
-POST /api/hierarchical/run      # Run starten
-GET  /api/hierarchical/teams    # Verfügbare Teams
-GET  /api/hierarchical/stats    # Team-Statistiken
+POST /api/hierarchical/run      # Start a run
+GET  /api/hierarchical/teams    # List available teams
+GET  /api/hierarchical/stats    # Team statistics
 ```
 
-**Use-Cases:**
-- Marketing-Plan erstellen (Researcher + Writer + Reviewer)
-- Code-Review (Coder + Reviewer + Tester)
-- Data-Analysis (Analyst + Visualizer + Presenter)
+**Use Cases:**
+- Marketing plan (Researcher + Writer + Reviewer)
+- Code review (Coder + Reviewer + Tester)
+- Data analysis (Analyst + Visualizer + Presenter)
 
 ---
 
 ## 📊 v1.28.0 Stats
 
-| Metrik | Wert |
-|--------|------|
-| **Neue Features** | 4 |
-| **Neue Dateien** | 19 |
-| **Tests** | 55/55 bestanden ✅ |
-| **Production-Ready** | ✅ Ja |
+| Metric | Value |
+|--------|-------|
+| **New Features** | 4 |
+| **New Files** | 19 |
+| **Tests** | 55/55 passed ✅ |
+| **Production-Ready** | ✅ Yes |
 | **Developed by** | KIMBA |
 
 ---
@@ -340,7 +340,7 @@ Like Business — self-hosted by default. Optionally: managed hosting by KI-OS (
 
 ## Edition Matrix (v1.28.0)
 
-**Alle Editionen basieren auf dem gleichen Codebase — unterscheiden sich durch Skalierung, Deployment und Compliance.**
+**All editions share the same codebase — differentiated by scale, deployment, and compliance.**
 
 | Capability | Community | Business | Enterprise |
 | :--- | :---: | :---: | :---: |
