@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * @file    intent.parser.service.js
  * @desc    Parst Chat-Eingaben in strukturierte Intents mit Slot-Extraktion (NLU).
  *          Drei-Stufen-Strategie: Keyword-Heuristik (0 Kosten) → LLM bei Confidence < 0.7
@@ -6,6 +12,7 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
@@ -80,7 +87,6 @@ const HEURISTIC_RULES = [
       /demonstrier[e]?\s+/i,
       /schritt[\s-]+für[\s-]+schritt/i,
       /wie\s+(?:kann|könnte)\s+ich\s+(?:einen?\s+)?/i,
-      /klick[e]?\s+(auf|mich)/i,
     ],
     baseConfidence: 0.88,
   },

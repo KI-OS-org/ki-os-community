@@ -1,4 +1,12 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * @license AGPL-3.0-only
  * @file    swarm.memory.js
  * @desc    KI-OS Swarm Memory — ACO-inspirierter persistenter Wissensspeicher.
  *          Kombiniert Ant Colony Optimization (confidence + decay) mit
@@ -7,6 +15,7 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
@@ -24,8 +33,14 @@ try {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const DB_PATH      = process.env.SWARM_MEMORY_PATH || path.join(process.cwd(), '.swarm-memory', 'store.json');
+function _dbPath() { return process.env.SWARM_MEMORY_PATH || path.join(process.cwd(), '.swarm-memory', 'store.json'); }
 const MAX_ENTRIES  = Number(process.env.SWARM_MEMORY_MAX  || 1000);
+function _backend() { return (process.env.SWARM_MEMORY_BACKEND || 'json').toLowerCase(); }
+let _lanceBackend = null;
+function _getLance() {
+  if (!_lanceBackend) _lanceBackend = require('./swarm.lancedb');
+  return _lanceBackend;
+}
 
 // ACO-Parameter (Ant Colony Optimization)
 const DECAY_LAMBDA        = Number(process.env.SWARM_DECAY_LAMBDA || 0.05); // Pheromon-Verdunstung pro Tag
@@ -38,23 +53,26 @@ const FEEDBACK_PENALTY = 0.10;  // confidence ↓ bei negativem Feedback
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-let _cache = null; // In-Memory Cache — wird bei jedem loadStore() gefüllt
+let _cache    = null;
+let _cachePath = null; // Pfad für den der Cache gilt — Invalidierung wenn Pfad wechselt
 
 function loadStore() {
-  if (_cache) return _cache;
+  const p = _dbPath();
+  if (_cache && _cachePath === p) return _cache;
+  _cache = null; _cachePath = p;
 
-  const dir = path.dirname(DB_PATH);
+  const dir = path.dirname(p);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  if (!fs.existsSync(DB_PATH)) {
+  if (!fs.existsSync(p)) {
     _cache = { entries: [], version: 1, createdAt: Date.now() };
     return _cache;
   }
 
   try {
-    _cache = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    _cache = JSON.parse(fs.readFileSync(p, 'utf8'));
     if (!Array.isArray(_cache.entries)) _cache.entries = [];
   } catch {
     _cache = { entries: [], version: 1, createdAt: Date.now() };
@@ -66,7 +84,7 @@ function loadStore() {
 function saveStore() {
   const store = loadStore();
   store.updatedAt = Date.now();
-  fs.writeFileSync(DB_PATH, JSON.stringify(store, null, 2), 'utf8');
+  fs.writeFileSync(_cachePath, JSON.stringify(store, null, 2), 'utf8');
 }
 
 // ─── ACO: Pheromon-Decay ─────────────────────────────────────────────────────
@@ -142,6 +160,7 @@ function store(text, metadata = {}) {
   if (!text || !String(text).trim()) {
     throw new Error('swarm.memory.store: text darf nicht leer sein');
   }
+  if (_backend() === 'lancedb') return _getLance().store(text, metadata);
 
   const db  = loadStore();
   const id  = crypto.createHash('sha1').update(String(text).trim()).digest('hex').slice(0, 12);
@@ -197,6 +216,7 @@ function store(text, metadata = {}) {
  */
 function retrieve(query, k = 5) {
   if (!query) return [];
+  if (_backend() === 'lancedb') return _getLance().retrieve(query, k);
 
   const db = loadStore();
 
@@ -238,6 +258,7 @@ function retrieve(query, k = 5) {
  * @returns {string} Leerer String wenn kein Kontext gefunden
  */
 function retrieveAsContext(query, k = 5) {
+  if (_backend() === 'lancedb') return _getLance().retrieveAsContext(query, k);
   const results = retrieve(query, k);
   if (results.length === 0) return '';
 
@@ -288,6 +309,7 @@ function feedback(id, positive = true) {
  * @returns {object}
  */
 function getStats() {
+  if (_backend() === 'lancedb') return _getLance().getStats();
   const db      = loadStore();
   const entries = db.entries;
 
@@ -313,7 +335,7 @@ function getStats() {
     decayLambda:            DECAY_LAMBDA,
     decayFloor:             DECAY_FLOOR,
     maxEntries:             MAX_ENTRIES,
-    dbPath:                 DB_PATH
+    dbPath:                 _dbPath()
   };
 }
 
@@ -341,6 +363,7 @@ function prune() {
  * @returns {Array}
  */
 function getEntries(limit = 50, type = null) {
+  if (_backend() === 'lancedb') return _getLance().getEntries(limit, type);
   const db = loadStore();
   let entries = db.entries;
   if (type) entries = entries.filter(e => e.metadata?.type === type);

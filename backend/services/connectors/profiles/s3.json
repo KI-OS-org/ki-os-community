@@ -1,0 +1,39 @@
+{
+  "profileId": "s3",
+  "tier": "enterprise",
+  "name": "AWS S3",
+  "category": "storage",
+  "protocol": "http-proxy",
+  "trustLevel": "high",
+  "authType": "apikey",
+  "capabilities": ["file.list", "file.get", "file.put", "file.delete", "file.presign"],
+  "webhookPattern": "https://{bucket}.s3.{region}.amazonaws.com/",
+  "headers": {
+    "Content-Type": "application/json",
+    "x-amz-date": "{amzDate}",
+    "Authorization": "AWS4-HMAC-SHA256 Credential={accessKey}/{date}/{region}/s3/aws4_request, ..."
+  },
+  "events": ["s3:ObjectCreated:*", "s3:ObjectRemoved:*", "s3:ObjectRestore:*"],
+  "payloadSchema": {
+    "type": "object",
+    "properties": {
+      "Records": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "eventName": { "type": "string" },
+            "s3": {
+              "type": "object",
+              "properties": {
+                "bucket": { "type": "object" },
+                "object": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "docs": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html"
+}

@@ -1,15 +1,15 @@
 {
   "version": 1,
   "active": false,
-  "stopRequested": false,
-  "interrupted": false,
-  "interruptReason": null,
+  "stopRequested": true,
+  "interrupted": true,
+  "interruptReason": "qa",
   "lastActionAt": null,
   "lastObserveAt": null,
   "lastScreenshotPath": null,
   "lockState": {
-    "locked": false,
-    "sessionId": null,
+    "locked": true,
+    "sessionId": "qa-session",
     "reason": null
   },
   "queue": [],

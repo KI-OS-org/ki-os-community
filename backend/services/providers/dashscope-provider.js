@@ -1,6 +1,14 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  * https://ki-os.org
+ * @license AGPL-3.0-only
  *
  * Datei: backend/services/providers/dashscope-provider.js
  *
@@ -11,6 +19,7 @@
  * API: https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text-generation/generation
  * Auth: Authorization: Bearer <DASHSCOPE_API_KEY>
  * Modelle: qwen-coder-plus, qwen-coder-plus-latest, qwen-long, qwen-turbo, qwen-max
+ * @license AGPL-3.0-only
  */
 
 'use strict';

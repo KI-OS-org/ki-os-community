@@ -1,0 +1,24 @@
+/**
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * License: AGPL-3.0-only (Community) / Proprietär (Enterprise)
+ * @desc Proxy-API für die öffentliche Decision-Theater-Gallery
+ */
+
+import { NextResponse } from "next/server";
+
+const BACKEND = process.env.BACKEND_URL ?? "http://localhost:3001";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const limit = searchParams.get("limit") ?? "20";
+  const offset = searchParams.get("offset") ?? "0";
+
+  try {
+    const res = await fetch(`${BACKEND}/api/theater/gallery?limit=${limit}&offset=${offset}`, { cache: "no-store" });
+    if (!res.ok) return NextResponse.json({ items: [] });
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json({ items: [] });
+  }
+}

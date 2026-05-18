@@ -92,6 +92,8 @@ function isTestAuthOverrideAllowed(request = {}) {
 
 function getServices() {
   return {
+    a2a:               () => require('../backend/controllers/a2a.controller'),
+    sales:             () => require('../backend/routes/sales.routes'),
     handleChat:        () => require('../backend/services/chat.controller').handleChat,
     starter:           () => require('../backend/services/demo/demo.news.service'),
     handleMemory:      () => require('../backend/services/memory.controller').handleMemory,
@@ -228,6 +230,18 @@ function createApp() {
       if (path === '/console' || path === '/console/app.js' || path === '/console/style.css' || path.startsWith('/ui/')) { const uiBody = method === 'GET' ? query : body; const result = await services.ui().handleUiRequest(path, method, uiBody, ctx); result.headers = Object.assign({}, result.headers || {}, { 'x-trace-id': traceId }); Observability.completeRequest(requestObs, { statusCode: result.statusCode }); return result; }
 
       if (path.startsWith('/starter')) { const result = await services.starter().handleStarterRequest(path, method); Observability.completeRequest(requestObs, { statusCode: result.statusCode }); return { statusCode: result.statusCode, headers: { 'x-trace-id': traceId }, body: result.body }; }
+
+      if (path.startsWith('/sales')) {
+        const result = await services.sales().handleSalesRequest(path, method, body, query);
+        Observability.completeRequest(requestObs, { statusCode: result.statusCode });
+        return { statusCode: result.statusCode, headers: { 'x-trace-id': traceId }, body: result.body };
+      }
+
+      if (path === '/.well-known/agent.json' || path.startsWith('/a2a')) {
+        const result = await services.a2a().handleA2aRequest(path, method, body, query);
+        Observability.completeRequest(requestObs, { statusCode: result.statusCode });
+        return { statusCode: result.statusCode, headers: { 'x-trace-id': traceId }, body: result.body };
+      }
 
       const res = { statusCode: 404, headers: { 'x-trace-id': traceId }, body: { error: 'Not Found', path, method } };
       Observability.completeRequest(requestObs, { statusCode: res.statusCode });

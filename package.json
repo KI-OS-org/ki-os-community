@@ -1,11 +1,8 @@
 {
-  "name": "ki-os",
-  "version": "1.6.0",
+  "name": "ki-os-community",
+  "version": "1.12.0",
   "main": "index.js",
   "type": "commonjs",
-  "workspaces": [
-    "frontend/orbit-control"
-  ],
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"
@@ -13,60 +10,65 @@
   "optionalDependencies": {
     "@aws-sdk/client-dynamodb": "^3.400.0",
     "@aws-sdk/client-lambda": "^3.400.0",
-    "@aws-sdk/lib-dynamodb": "^3.400.0"
+    "@aws-sdk/lib-dynamodb": "^3.400.0",
+    "@lancedb/lancedb": "^0.22.0",
+    "@langchain/langgraph": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.10.0",
+    "sqlite-vec": "^0.1.6"
   },
   "dependencies": {
+    "@clickhouse/client": "^1.18.3",
     "adm-zip": "^0.5.10",
     "axios": "^1.6.2",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
     "cors": "^2.8.5",
     "discord.js": "^14.26.2",
     "dotenv": "^16.3.1",
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "form-data": "^4.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "node-fetch": "^2.7.0",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.14.0",
     "pptxgenjs": "^3.12.0",
-    "uuid": "^9.0.1"
+    "sqlite3": "^6.0.1",
+    "uuid": "^14.0.0"
   },
   "scripts": {
-    "start": "node index.js",
+    "start": "node runtime/local/server.js",
     "discord": "node scripts/discord-bot.js",
-    "start:local": "node index.js",
+    "start:local": "node runtime/local/server.js",
+    "screenshots": "node scripts/book-screenshots.mjs",
+    "benchmark": "node scripts/model-benchmark.mjs",
     "test": "node scripts/full-regression.js",
     "setup:env": "node scripts/setup-env.js",
     "doctor": "node scripts/doctor.js",
+    "doctor:mcp": "node scripts/mcp-doctor.js",
     "smoke": "node scripts/smoke.js",
     "qwen": "node scripts/qwen-chat.js",
     "install:clean": "npm install --no-audit --no-fund",
-    "start:aws": "node -e \"require('./runtime/aws/handler').handler({rawPath:'/health',requestContext:{http:{method:'GET'}},headers:{}},{}).then(r=>console.log(r.body))\"",
-    "doctor:aws": "node scripts/doctor.js --aws",
-    "test:desktop": "node --test --test-concurrency=1 tests/desktop*.test.js",
     "test:regression": "node scripts/full-regression.js",
-    "qa:preflight": "node scripts/qa-preflight.js",
-    "qa:claude": "npm run qa:preflight && node --test --test-concurrency=1 tests/r27-production-backbone-dag.test.js && node --test --test-concurrency=1 tests/r28-control-plane-visible.test.js && node --test --test-concurrency=1 tests/r29-runtime-reality-hardening.test.js && node --test --test-concurrency=1 tests/r30-real-task-execution.test.js && node --test --test-concurrency=1 tests/r1-blockers.test.js && node --test --test-concurrency=1 tests/r10-enterprise-hardening.test.js && node --test --test-concurrency=1 tests/r12-policy-os-privacy.test.js && node --test --test-concurrency=1 tests/r25-production-activation.test.js",
-    "qa:r28": "node --test --test-concurrency=1 tests/r28-control-plane-visible.test.js",
-    "qa:r30": "node --test --test-concurrency=1 tests/r30-real-task-execution.test.js",
     "doctor:frontend": "node scripts/doctor.frontend.js",
     "doctor:full": "npm run doctor && npm run doctor:frontend",
-    "start:stack": "node frontend/orbit-control/scripts/ki-os-start.mjs",
-    "rc:gate": "node scripts/release-gate-1.0.2.js",
-    "test:l2": "node --test tests/l2.trace-store.test.js tests/l2.memory-store.test.js tests/l2.files-store.test.js tests/l2.runtime-runs-create.routes.test.js tests/l2.explain.routes.test.js tests/l2.trust.routes.test.js tests/l2.files.routes.test.js tests/l2.memory.routes.test.js",
-    "release:gate:1.0.0": "node scripts/release-gate-1.0.0.js",
-    "smoke:fullstack:1.0.0": "node scripts/full-stack-smoke-1.0.0.js",
-    "test:frontend:1.0.0": "node --test frontend/orbit-control/tests/l2.adapter-route-coverage.test.mjs",
-    "release:gate:1.0.1": "node scripts/release-gate-1.0.1.js",
-    "smoke:fullstack:1.0.1": "node scripts/full-stack-smoke-1.0.1.js",
-    "test:frontend:1.0.1": "node --test frontend/orbit-control/tests/l2.adapter-behavior.test.mjs",
-    "release:gate:1.0.2": "node scripts/release-gate-1.0.2.js",
-    "smoke:fullstack:1.0.2": "node scripts/full-stack-smoke-1.0.2.js",
-    "test:frontend:1.0.2": "node --test frontend/orbit-control/tests/l2.adapter-behavior.test.mjs",
-    "build:community": "node build-community.js",
-    "build:community:dry": "node build-community.js --dry-run",
-    "release": "bash scripts/build-release.sh",
-    "release:win": "scripts\\build-release.bat",
-    "release:dry": "bash scripts/build-release.sh --dry-run",
-    "release:skip-build": "bash scripts/build-release.sh --skip-build"
-  }
+    "test:l2": "node --test tests/l2.trace-store.test.js tests/l2.memory-store.test.js tests/l2.files-store.test.js tests/l2.runtime-runs-create.routes.test.js tests/l2.explain.routes.test.js tests/l2.trust.routes.test.js tests/l2.files.routes.test.js tests/l2.memory.routes.test.js"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1032.0",
+    "supertest": "^7.2.2"
+  },
+  "overrides": {
+    "dompurify": ">=3.4.0",
+    "follow-redirects": ">=1.16.0",
+    "brace-expansion": ">=1.1.13",
+    "yaml": ">=1.10.3",
+    "uuid": "^14.0.0",
+    "postcss": ">=8.5.10",
+    "elliptic": "^6.6.1",
+    "hono": "^4.12.18"
+  },
+  "edition": "community",
+  "private": true
 }

@@ -1,6 +1,13 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
  * https://ki-os.org
+ * @license AGPL-3.0-only
  */
 /**
  * (c) 2026 KI-OS.org — AgentMesh Runtime Controller
@@ -20,6 +27,7 @@
 const store                = require('./mesh.store');
 const { createMeshRun }    = require('./mesh.models');
 const { executeMeshRun, requestCancel } = require('./mesh.runtime');
+const { enforceConcurrentLimit } = require('../core/runtime.policy');
 const { list: listEvents } = require('../ui/ui.eventbus');
 const logger               = require('../core/logger.service');
 const { isEnterprise }     = require('../blauer-elefant/edition.guard');
@@ -57,6 +65,12 @@ async function startRun(body, ctx) {
   const task = String(body.task || body.taskDescription || '').trim();
   if (!task) {
     return { statusCode: 400, body: { success: false, error: 'Field "task" is required.' } };
+  }
+
+  const { activeRuns } = store.getStoreStats();
+  const limit = enforceConcurrentLimit(activeRuns);
+  if (!limit.ok) {
+    return { statusCode: limit.code || 429, body: { success: false, error: limit.message } };
   }
 
   // Community Edition: max 3 parallele Runs (PENDING + RUNNING)

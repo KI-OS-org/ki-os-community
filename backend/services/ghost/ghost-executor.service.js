@@ -1,14 +1,34 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * Ghost Control — Ghost Executor Service
  * 
  * Führt Ghost Steps im Backend aus.
  * Verarbeitet API-Calls und andere Backend-Aktionen.
  * 
  * @module services/ghost/ghost-executor.service.js
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * @license AGPL-3.0-only
  */
 
+const http = require('http');
 const https = require('https');
-const auditLog = require('../ui/runtime.store');
+const { updateSession, writeGhostAudit } = require('./ghost.security');
+const { push: emitUI } = require('../ui/ui.eventbus');
+
+const GHOST_SYSTEM_USER_ID = 'ghost-system';
+const GHOST_SYSTEM_ROLE = 'system';
+const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+const ALLOWED_API_ENDPOINTS = new Set(
+  (process.env.GHOST_ALLOWED_API_ENDPOINTS || '/api/agents')
+    .split(',')
+    .map(endpoint => endpoint.trim())
+    .filter(Boolean)
+);
 
 /**
  * Ghost Executor Service
@@ -56,7 +76,7 @@ class GhostExecutorService {
       throw new Error('API call requires target and payload');
     }
 
-    console.log('[GhostExecutor] Executing API call:', target, payload);
+    console.log('[GhostExecutor] Executing API call:', target);
 
     // API-Call ausführen
     const result = await this.makeApiRequest(target, payload, context);
@@ -74,10 +94,10 @@ class GhostExecutorService {
   /**
    * Macht HTTP-Request
    */
-  makeApiRequest(endpoint, payload, context) {
+  async makeApiRequest(endpoint, payload, context = {}) {
+    const url = await this.resolveApiEndpoint(endpoint, context);
+
     return new Promise((resolve, reject) => {
-      const url = new URL(endpoint, process.env.API_BASE_URL || 'http://localhost:3000');
-      
       const postData = JSON.stringify(payload);
       
       const options = {
@@ -88,13 +108,15 @@ class GhostExecutorService {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(postData),
-          'X-User-Id': context.userId || 'ghost-system',
-          'X-Role': context.role || 'system',
+          'X-User-Id': GHOST_SYSTEM_USER_ID,
+          'X-Role': GHOST_SYSTEM_ROLE,
+          'X-User-Role': GHOST_SYSTEM_ROLE,
           'X-Trace-Id': context.traceId || `ghost-${Date.now()}`,
         },
       };
 
-      const req = https.request(options, (res) => {
+      const transport = url.protocol === 'https:' ? https : http;
+      const req = transport.request(options, (res) => {
         let data = '';
         
         res.on('data', chunk => data += chunk);
@@ -123,10 +145,97 @@ class GhostExecutorService {
   }
 
   /**
+   * Validiert und normalisiert interne API-Routes.
+   */
+  async resolveApiEndpoint(endpoint, context = {}) {
+    const rawEndpoint = String(endpoint || '').trim();
+
+    const deny = async (reason) => {
+      await this.logSecurityEvent({
+        reason,
+        target: rawEndpoint || '<empty>',
+        traceId: context.traceId,
+      });
+      throw new Error(`Blocked unsafe Ghost API target: ${reason}`);
+    };
+
+    if (!rawEndpoint) {
+      await deny('missing_target');
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(rawEndpoint) || rawEndpoint.startsWith('//')) {
+      await deny('absolute_url_not_allowed');
+    }
+
+    if (rawEndpoint.includes('\\')) {
+      await deny('invalid_path_separator');
+    }
+
+    if (!rawEndpoint.startsWith('/api/')) {
+      await deny('non_api_route_not_allowed');
+    }
+
+    let url;
+    try {
+      url = new URL(rawEndpoint, process.env.API_BASE_URL || DEFAULT_API_BASE_URL);
+    } catch (error) {
+      await deny('invalid_url');
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      await deny('unsupported_protocol');
+    }
+
+    if (!url.pathname.startsWith('/api/')) {
+      await deny('path_traversal_outside_api');
+    }
+
+    if (!ALLOWED_API_ENDPOINTS.has(url.pathname)) {
+      await deny('endpoint_not_allowlisted');
+    }
+
+    return url;
+  }
+
+  /**
+   * Audit-Log für blockierte Ghost-Security-Events.
+   */
+  async logSecurityEvent(event) {
+    const auditEntry = {
+      timestamp: new Date().toISOString(),
+      action: 'ghost_api_call_blocked',
+      userId: GHOST_SYSTEM_USER_ID,
+      role: GHOST_SYSTEM_ROLE,
+      status: 'blocked',
+      reason: event.reason,
+      decisionReason: event.reason,
+      target: event.target,
+      traceId: event.traceId,
+    };
+
+    console.error('[GhostExecutor] Blocked unsafe API call:', event.reason, event.target);
+
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      const auditFile = process.env.GHOST_AUDIT_FILE || path.join(process.cwd(), '.ki-os-audit.ndjson');
+
+      await fs.appendFile(auditFile, JSON.stringify(auditEntry) + '\n', 'utf-8');
+    } catch (error) {
+      console.error('[GhostExecutor] Failed to write security audit log:', error);
+    }
+  }
+
+  /**
    * Wartet auf User-Confirmation
    */
   async waitForConfirmation(step, context) {
     console.log('[GhostExecutor] Waiting for confirmation:', step.callout);
+    await writeGhostAudit('ghost_confirmation_required', {
+      stepId: step.id,
+      stepType: step.type,
+      decisionReason: 'step_requires_user_confirmation',
+    }, context).catch(() => {});
     
     // In der Frontend-Implementation wird hier auf User-Input gewartet
     // Für Backend-Execution geben wir nur den Status zurück
@@ -158,9 +267,13 @@ class GhostExecutorService {
     const auditEntry = {
       timestamp: new Date().toISOString(),
       action: 'ghost_api_call',
-      userId: context.userId || 'ghost-system',
+      userId: GHOST_SYSTEM_USER_ID,
+      role: GHOST_SYSTEM_ROLE,
+      ip: context.ip || 'unknown',
+      route: context.route || null,
       status: 'ok',
       details: `Ghost executed API call: ${step.target}`,
+      decisionReason: 'allowlisted_internal_api_call',
       stepId: step.id,
       stepType: step.type,
       result: result.id || 'unknown',
@@ -171,7 +284,7 @@ class GhostExecutorService {
     try {
       const fs = require('fs').promises;
       const path = require('path');
-      const auditFile = path.join(process.cwd(), '.ki-os-audit.ndjson');
+      const auditFile = process.env.GHOST_AUDIT_FILE || path.join(process.cwd(), '.ki-os-audit.ndjson');
       
       await fs.appendFile(auditFile, JSON.stringify(auditEntry) + '\n', 'utf-8');
       console.log('[GhostExecutor] Audit log entry created');
@@ -187,34 +300,62 @@ class GhostExecutorService {
     const results = [];
     
     console.log('[GhostExecutor] Starting plan execution:', plan.id);
-
-    for (let i = 0; i < plan.steps.length; i++) {
-      const step = plan.steps[i];
-      
-      console.log(`[GhostExecutor] Executing step ${i + 1}/${plan.steps.length}:`, step.type);
-      
-      const result = await this.executeStep(step, context);
-      results.push(result);
-      
-      // Bei API-Calls mit Confirmation warten
-      if (result.requiresConfirmation) {
-        console.log('[GhostExecutor] Waiting for user confirmation...');
-        // Frontend wird hier den User fragen
-        break;
-      }
-      
-      // Kurze Pause zwischen Steps
-      if (step.duration) {
-        await this.sleep(step.duration);
-      }
-    }
-
-    return {
+    await writeGhostAudit('ghost_plan_execution_start', {
       planId: plan.id,
       sessionId: plan.sessionId,
-      results,
-      completedAt: new Date().toISOString(),
-    };
+      stepCount: Array.isArray(plan.steps) ? plan.steps.length : 0,
+      decisionReason: 'executor_started_plan',
+    }, context).catch(() => {});
+
+    emitUI('ghost.plan.executing', { planId: plan.id, title: plan.title, stepCount: plan.steps.length });
+    try {
+      for (let i = 0; i < plan.steps.length; i++) {
+        const step = plan.steps[i];
+
+        console.log(`[GhostExecutor] Executing step ${i + 1}/${plan.steps.length}:`, step.type);
+        emitUI('ghost.step.started', { planId: plan.id, stepId: step.id, type: step.type, callout: step.callout, stepNum: i + 1, total: plan.steps.length });
+        const result = await this.executeStep(step, context);
+        emitUI('ghost.step.completed', { planId: plan.id, stepId: step.id, type: step.type, success: result.success !== false });
+        results.push(result);
+        
+        // Bei API-Calls mit Confirmation warten
+        if (result.requiresConfirmation) {
+          console.log('[GhostExecutor] Waiting for user confirmation...');
+          // Frontend wird hier den User fragen
+          break;
+        }
+        
+        // Kurze Pause zwischen Steps
+        if (step.duration) {
+          await this.sleep(step.duration);
+        }
+      }
+
+      const completed = {
+        planId: plan.id,
+        sessionId: plan.sessionId,
+        results,
+        completedAt: new Date().toISOString(),
+      };
+
+      emitUI('ghost.plan.completed', { planId: plan.id, title: plan.title, stepCount: results.length });
+      await writeGhostAudit('ghost_plan_execution_end', {
+        planId: plan.id,
+        sessionId: plan.sessionId,
+        resultCount: results.length,
+        decisionReason: 'executor_finished_plan',
+      }, context).catch(() => {});
+
+      return completed;
+    } catch (error) {
+      await writeGhostAudit('ghost_plan_execution_failed', {
+        planId: plan.id,
+        sessionId: plan.sessionId,
+        error: error.message,
+        decisionReason: 'executor_step_failed',
+      }, context).catch(() => {});
+      throw error;
+    }
   }
 
   /**
@@ -229,25 +370,7 @@ class GhostExecutorService {
    */
   async saveSession(sessionId, status) {
     try {
-      const fs = require('fs').promises;
-      const path = require('path');
-      const sessionFile = path.join(process.cwd(), '.ki-os-ghost-sessions.json');
-      
-      let sessions = {};
-      try {
-        const data = await fs.readFile(sessionFile, 'utf-8');
-        sessions = JSON.parse(data);
-      } catch (e) {
-        // File existiert nicht
-      }
-      
-      sessions[sessionId] = {
-        ...sessions[sessionId],
-        ...status,
-        updatedAt: new Date().toISOString(),
-      };
-      
-      await fs.writeFile(sessionFile, JSON.stringify(sessions, null, 2), 'utf-8');
+      await updateSession(sessionId, status);
     } catch (error) {
       console.error('[GhostExecutor] Failed to save session:', error);
     }

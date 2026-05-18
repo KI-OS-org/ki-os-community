@@ -1,7 +1,14 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: admin.controller.js
  * Diese Datei bündelt Admin-Endpunkte und Steuerlogik für Konfiguration, Tests und Verwaltungsfunktionen im KI-OS Backend.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

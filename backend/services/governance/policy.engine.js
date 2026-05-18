@@ -1,6 +1,13 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
  * https://ki-os.org
+ * @license AGPL-3.0-only
  */
 'use strict';
 const fs = require('fs');
@@ -9,24 +16,31 @@ const Observability = require('../core/observability.service');
 const { writeAudit } = require('../ui/ui.audit');
 
 const POLICY_VERSION = 'v3';
+const RISK_TIERS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const DEFAULT_POLICY_DEFINITIONS = Object.freeze([
   {
-    id: 'desktop-read-basic', tools: ['desktop_status', 'desktop_observe', 'desktop_screenshot'], allowRoles: ['admin', 'operator', 'viewer', 'auditor', 'user'], effect: 'allow', description: 'Read-only desktop visibility actions are broadly allowed for authenticated roles.'
+    id: 'desktop-read-basic', tools: ['desktop_status', 'desktop_observe', 'desktop_screenshot'], allowRoles: ['admin', 'operator', 'viewer', 'auditor', 'user'], effect: 'allow', riskTier: 'LOW', description: 'Read-only desktop visibility actions are broadly allowed for authenticated roles.'
   },
   {
-    id: 'desktop-safe-actions', tools: ['desktop_action'], actions: ['click', 'wait', 'scroll', 'move'], allowRoles: ['admin', 'operator'], effect: 'allow', description: 'Low-risk desktop actions are allowed for admin and operator.'
+    id: 'desktop-safe-actions', tools: ['desktop_action'], actions: ['click', 'wait', 'scroll', 'move'], allowRoles: ['admin', 'operator'], effect: 'allow', riskTier: 'MEDIUM', description: 'Low-risk desktop actions are allowed for admin and operator.'
   },
   {
-    id: 'desktop-critical-approval', tools: ['desktop_action', 'desktop_stop', 'desktop_session_lock', 'desktop_session_unlock'], actions: ['type', 'hotkey', 'drag', 'open', 'command', 'script', 'lock', 'unlock', 'stop'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', description: 'Critical desktop actions require admin or operator approval.'
+    id: 'desktop-critical-approval', tools: ['desktop_action', 'desktop_stop', 'desktop_session_lock', 'desktop_session_unlock'], actions: ['type', 'hotkey', 'drag', 'open', 'command', 'script', 'lock', 'unlock', 'stop'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', riskTier: 'CRITICAL', description: 'Critical desktop actions require admin or operator approval.'
   },
   {
-    id: 'webhook-trigger-critical', tools: ['webhook_trigger'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', description: 'Webhook trigger is treated as a critical external action.'
+    id: 'webhook-trigger-critical', tools: ['webhook_trigger'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', riskTier: 'CRITICAL', description: 'Webhook trigger is treated as a critical external action.'
   },
   {
-    id: 'mcp-invoke-governed', tools: ['mcp_invoke'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', description: 'MCP connector invocation is standardized and governed like other external actions.'
+    id: 'mcp-invoke-governed', tools: ['mcp_invoke'], allowRoles: ['admin'], escalateRoles: ['operator'], effect: 'mixed', riskTier: 'CRITICAL', description: 'MCP connector invocation is standardized and governed like other external actions.'
   },
   {
-    id: 'provider-call-governed', tools: ['provider_call', 'llm_invoke'], allowRoles: ['admin', 'operator'], escalateRoles: ['auditor'], effect: 'mixed', description: 'LLM and provider calls are governance-aware by default.'
+    id: 'mesh-run-allowed', tools: ['mesh_run'], actions: ['execute'], allowRoles: ['admin', 'operator', 'user'], effect: 'allow', riskTier: 'MEDIUM', description: 'AgentMesh runs are allowed for authenticated users.'
+  },
+  {
+    id: 'provider-call-governed', tools: ['provider_call', 'llm_invoke'], allowRoles: ['admin', 'operator'], escalateRoles: ['auditor'], effect: 'mixed', riskTier: 'HIGH', description: 'LLM and provider calls are governance-aware by default.'
+  },
+  {
+    id: 'write-file-governed', tools: ['write_file'], allowRoles: ['admin', 'operator'], escalateRoles: ['user'], effect: 'mixed', riskTier: 'HIGH', description: 'File writing by agents requires admin/operator role.'
   }
 ]);
 
@@ -190,4 +204,4 @@ function evaluateToolPolicy({ tool, action, ctx = {}, payload = {}, policies } =
 function evaluatePolicy(args = {}) { return evaluateToolPolicy(args); }
 function getPolicyDefinitions() { return loadConfiguredPolicies(); }
 
-module.exports = { POLICY_VERSION, DEFAULT_POLICY_DEFINITIONS, evaluatePolicy, evaluateToolPolicy, getPolicyDefinitions, policyConfigPath, evaluateConstraints };
+module.exports = { POLICY_VERSION, RISK_TIERS, DEFAULT_POLICY_DEFINITIONS, evaluatePolicy, evaluateToolPolicy, getPolicyDefinitions, policyConfigPath, evaluateConstraints };

@@ -1,6 +1,13 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
  * https://ki-os.org
+ * @license AGPL-3.0-only
  */
 /**
  * (c) 2026 KI-OS.org — AgentMesh Runtime Store
@@ -71,6 +78,7 @@ function _flushToDisk() {
   try {
     const data    = runOrder.map(id => runs.get(id)).filter(Boolean);
     const tmpFile = STORE_FILE + '.tmp';
+    fs.mkdirSync(path.dirname(STORE_FILE), { recursive: true });
     fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf8');
     fs.renameSync(tmpFile, STORE_FILE);
   } catch (err) {

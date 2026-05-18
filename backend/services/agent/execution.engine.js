@@ -1,7 +1,14 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: execution.engine.js
  * Diese Datei enthält JavaScript-Logik für Runtime, Services, Tools oder Tests innerhalb des KI-OS AgentMesh.
+ * @license AGPL-3.0-only
  */
 
 'use strict';
@@ -77,7 +84,7 @@ class ExecutionEngine {
             escalated.statusCode = 403;
             throw escalated;
           }
-          const toolResult = await registry.executeTool(step.tool, params);
+          const toolResult = await registry.executeTool(step.tool, params, context);
           results[step.id] = toolResult;
           checkpoints.push({ step: step.id, tool: step.tool, agent_role: step.agent_role || 'executor', attempt, success: true });
           lastError = null;

@@ -1,10 +1,17 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * @file    ghost.plan.controller.js
  * @desc    Express Request Handler für Ghost Control Endpoints.
  *          POST /ghost/plan — Generiert einen GhostPlan aus einem User-Ziel.
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
@@ -37,7 +44,11 @@ async function handleGhostPlan(path, method, body, ctx) {
   const mode = rawMode === 'build' ? 'build' : 'demo';
 
   try {
-    const result = await generatePlan(goal, mode);
+    const result = await generatePlan(goal, mode, {
+      ...ctx,
+      route: '/ghost/plan',
+      path: '/ghost/plan',
+    });
     return { statusCode: 200, body: result };
   } catch (err) {
     logger.error('ghost.plan.controller.error', { error: err.message });
@@ -77,6 +88,12 @@ async function handleGhostVerify(path, method, body, ctx) {
     return { statusCode: 200, body: { success: true, ...result } };
   } catch (err) {
     logger.error('ghost.verify.controller.error', { error: err.message });
+    if (/imageData|Base64|Bild|Bildtyp|base64|too large|groß|unsupported|invalid/i.test(err.message)) {
+      return {
+        statusCode: 400,
+        body: { success: false, error: 'Invalid imageData', details: err.message }
+      };
+    }
     return {
       statusCode: 500,
       body: { success: false, error: 'Ghost Vision verification failed', details: err.message }
@@ -120,7 +137,15 @@ async function handleGhostReplan(path, method, body, ctx) {
   const mode       = body.mode === 'build' ? 'build' : 'demo';
 
   try {
-    const result = await replanOnVisionFail({ goal, mode, originalPlan, failedStepIndex, visionResult, retryCount });
+    const result = await replanOnVisionFail({
+      goal,
+      mode,
+      originalPlan,
+      failedStepIndex,
+      visionResult,
+      retryCount,
+      ctx: { ...ctx, route: '/ghost/replan', path: '/ghost/replan' },
+    });
     return { statusCode: 200, body: result };
   } catch (err) {
     logger.error('ghost.replan.controller.error', { error: err.message });

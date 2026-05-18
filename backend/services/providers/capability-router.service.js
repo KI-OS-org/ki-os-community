@@ -1,8 +1,15 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * (c) 2026 KI-OS.org (v6.1) by Ingo Schaffer und Kimba
  * Datei: capability-router.service.js
  * Diese Datei bündelt das rollen- und capability-basierte Routing von KI-OS über die Pflicht-Provider.
  * Sie löst pro Aufgabe den besten Provider und das passende Modell für Chat, Research, Code, Websearch und Vision auf.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

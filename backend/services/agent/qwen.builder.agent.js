@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * @file    qwen.builder.agent.js
  * @desc    Qwen 2.5 72B Execution Agent — spezialisiert auf Code-Generierung,
  *          Analyse und strukturierte Ausgaben. Läuft via OpenRouter (kein DashScope).
@@ -6,6 +12,7 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
@@ -187,6 +194,58 @@ async function review(code, task) {
   }
 }
 
+function extractPrimaryCode(output = '') {
+  const text = String(output || '').trim();
+  const match = text.match(/```(?:javascript|js|json|markdown|md|txt)?\s*([\s\S]+?)```/i);
+  return match ? match[1].trim() : text;
+}
+
+async function buildReviewGate(task, options = {}) {
+  const buildFn = options.buildFn || build;
+  const reviewFn = options.reviewFn || review;
+  const gateFn = options.gateFn || require('./lokal-heros-team-gate.service').gateTeamOutput;
+  const buildTask = typeof task === 'string'
+    ? task
+    : String(task?.task || task?.title || '').trim();
+
+  const buildResult = await buildFn(buildTask, options);
+  if (!buildResult?.success) {
+    return {
+      success: false,
+      stage: 'build',
+      build: buildResult,
+      approved: false,
+      gate: null
+    };
+  }
+
+  const candidate = options.reviewOnRawOutput ? String(buildResult.output || '') : extractPrimaryCode(buildResult.output || '');
+  const reviewTask = options.reviewTask || (typeof task === 'string' ? task : task?.task || 'KI-OS Team Task');
+  const reviewResult = await reviewFn(candidate, reviewTask);
+  const reviewApproved = Boolean(reviewResult?.approved);
+
+  const gateInput = {
+    task: typeof task === 'string'
+      ? { task, domain: options.domain || 'business', reviewerPersona: options.reviewerPersona || null }
+      : { ...(task || {}), reviewerPersona: options.reviewerPersona || task?.reviewerPersona || null },
+    answer: String(buildResult.output || ''),
+    sources: options.sources || [],
+    reviewerPersona: options.reviewerPersona || null
+  };
+  const gateResult = await gateFn(gateInput, options.gateOptions || {});
+  const approved = reviewApproved && gateResult?.ok;
+
+  return {
+    success: approved,
+    stage: approved ? 'approved' : 'blocked',
+    approved,
+    build: buildResult,
+    review: reviewResult,
+    gate: gateResult,
+    candidate
+  };
+}
+
 // ─── Status ───────────────────────────────────────────────────────────────────
 
 function getStatus() {
@@ -201,4 +260,4 @@ function getStatus() {
   };
 }
 
-module.exports = { build, analyze, review, getStatus, QWEN_MODEL, REVIEW_MODEL };
+module.exports = { build, analyze, review, buildReviewGate, getStatus, QWEN_MODEL, REVIEW_MODEL };

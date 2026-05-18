@@ -1,7 +1,14 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: planning.engine.js
  * Diese Datei erzeugt und bewertet Ausführungspläne im AgentMesh und entscheidet, welche Tools und Schritte verwendet werden.
+ * @license AGPL-3.0-only
  */
 
 'use strict';
@@ -148,6 +155,15 @@ Nutze nur vorhandene Tools. Maximal 4 Schritte.`;
       const res = await callOpenAI({ model: this.options.model, messages: [{ role: 'user', content: prompt }], temperature: 0.1 });
       const jsonStr = String(res.text || '').replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(jsonStr);
+      if (parsed && parsed.tool === 'write_file' && typeof parsed.path === 'string' && typeof parsed.content === 'string') {
+        return {
+          tool: parsed.tool,
+          path: parsed.path,
+          content: parsed.content,
+          mode: parsed.mode || 'overwrite',
+          reasoning: parsed.reasoning || 'LLM direct tool output'
+        };
+      }
       if (!parsed || !Array.isArray(parsed.steps) || !parsed.steps.length) return fallbackPlan(query, context);
       return {
         reasoning: parsed.reasoning || 'LLM generated plan',

@@ -91,24 +91,53 @@ if not "%OPENAI_KEY%"=="" (
 echo   OK: .env konfiguriert.
 echo.
 
-REM ── 3. Backend-Abhängigkeiten ─────────────────────────────────────────────────
+REM ── 2b. Verzeichnisrechte pruefen und korrigieren ────────────────────────────
+
+echo [2b/5] Prüfe Verzeichnisrechte...
+icacls . /C > nul 2>&1
+if %errorlevel% neq 0 (
+    echo   [HINWEIS] Keine Schreibrechte erkannt - korrigiere mit takeown...
+    takeown /F . /R /D Y > nul 2>&1
+    icacls . /grant %USERNAME%:F /T > nul 2>&1
+    if %errorlevel% neq 0 (
+        echo   [WARNUNG] Rechte konnten nicht automatisch geaendert werden.
+        echo   Bitte in Admin-CMD ausfuehren:
+        echo     takeown /F . /R /D Y
+        echo     icacls . /grant %USERNAME%:F /T
+    ) else (
+        echo   OK: Verzeichnisrechte korrigiert fuer %USERNAME%.
+    )
+) else (
+    echo   OK: Verzeichnisrechte in Ordnung.
+)
+echo.
+
+REM ── 3. Backend-Abhaengigkeiten ──────────────────────────────────────────────
 
 :npm_install
-echo [3/4] Installiere Backend-Abhaengigkeiten...
+echo [3/5] Installiere Backend-Abhaengigkeiten...
 call npm install
 if %errorlevel% neq 0 (
     echo.
     echo [FEHLER] npm install fehlgeschlagen.
     echo Internetverbindung pruefen oder npm-Version aktualisieren.
+    echo Falls Rechteproblem: Als Administrator ausfuehren oder 'takeown /F node_modules /R /D Y' ausfuehren.
     pause
     exit /b 1
 )
 echo   OK: Backend-Abhaengigkeiten installiert.
 echo.
 
+REM ── 3a. Daten-Verzeichnis anlegen ────────────────────────────────────────────
+
+if not exist data mkdir data
+icacls data /grant %USERNAME%:F > nul 2>&1
+echo   OK: data\ Verzeichnis bereit (SQLite-Datenbanken).
+echo.
+
 REM ── 4. Frontend installieren und bauen ───────────────────────────────────────
 
-echo [4/4] Installiere und baue Frontend (dauert 1-2 Min)...
+echo [4/5] Installiere und baue Frontend (dauert 1-2 Min)...
 
 if not exist frontend\orbit-control (
     echo [FEHLER] Verzeichnis 'frontend\orbit-control' nicht gefunden.
@@ -140,7 +169,7 @@ echo.
 
 REM ── Shortcuts erstellen ───────────────────────────────────────────────────────
 
-echo Erstelle Desktop-Verkuepfungen mit KI-OS Icon...
+echo [5/5] Erstelle Desktop-Verkuepfungen mit KI-OS Icon...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\create-shortcuts.ps1" -Both
 if %errorlevel% neq 0 (
     echo   [HINWEIS] Shortcuts konnten nicht erstellt werden - bitte manuell ausfuehren.

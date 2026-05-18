@@ -1,8 +1,15 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * (c) 2026 KI-OS.org (v6.1) by Ingo Schaffer und Kimba
  * Datei: models-services.js
  * Diese Datei lädt den Modell-Katalog für KI-OS aus Discovery, DynamoDB, lokaler Datei oder Fallback und stellt Rollenmodelle für AgentMesh bereit.
  * Sie ist die zentrale Registry-Schicht zwischen Multi-Provider-Discovery, Router und den Laufzeit-Komponenten von api.kimba.in.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

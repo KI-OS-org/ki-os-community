@@ -1,8 +1,15 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * (c) 2026 KI-OS.org (v6.1) by Ingo Schaffer und Kimba
  * Datei: model.discovery.service.js
  * Diese Datei ruft aktuelle Modelllisten der Pflicht-Provider ab, normalisiert sie und wählt daraus die besten Kandidaten pro Rolle.
  * Sie dient als dynamische Discovery-Schicht für api.kimba.in, damit KI-OS nicht auf veraltete, hart codierte Modellnamen angewiesen ist.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

@@ -1,6 +1,13 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
  * https://ki-os.org
+ * @license AGPL-3.0-only
  */
 /**
  * (c) 2026 KI-OS.org — AgentMesh Runtime Engine
@@ -23,20 +30,27 @@
 const store              = require('./mesh.store');
 const { createMeshStep } = require('./mesh.models');
 const { push: emitUI }   = require('../ui/ui.eventbus');
+const { checkAgentLimit } = require('../../middleware/license.gate');
 const logger             = require('../core/logger.service');
-const { evaluatePolicy } = require('../governance/policy.engine');
+const { evaluatePolicy, evaluateToolPolicy } = require('../governance/policy.engine');
 const { PlanningEngine } = require('../agent/planning.engine');
 const { ExecutionEngine } = require('../agent/execution.engine');
+const { evaluateReflection } = require('./reflection.service');
+const memoryBroker       = require('../memory/memory.broker');
+const runRegistry        = require('../registry/run.registry.service');
+const reflectionEngine   = require('../reflection/reflection.service');
+const roleRegistry       = require('./role-registry');
+const writeFileTool      = require('./tools/write-file.tool');
+const { writeAudit }     = require('../ui/ui.audit');
 
-// Providers — use same resolution as agent.layer.js
-const Anthropic  = require('../providers/anthropic.provider');
-const OpenAI     = require('../providers/openai.provider');
-const OpenRouter = require('../providers/openrouter.provider');
+// Providers now handled by llm.router.js (with fallback chains + circuit breaker)
 
 // ─── config ──────────────────────────────────────────────────────────────────
 
 const RUN_TIMEOUT_MS = Number(process.env.MESH_RUN_TIMEOUT_MS || 300000); // 5 min default
 const STRATEGY       = process.env.MESH_EXECUTION_STRATEGY || 'full';
+const REFLECTION_MIN_SCORE = parseFloat(process.env.REFLECTION_MIN_SCORE || '0.7');
+const REFLECTION_MAX_RETRIES = 2;
 
 // ─── cancellation signals ────────────────────────────────────────────────────
 
@@ -118,41 +132,17 @@ function getCostSummary(runId) {
   return { entries, byAgent, totalUSD: +totalUSD.toFixed(6), savedUSD: +savedUSD.toFixed(6), savedPct, baseline: 'claude-haiku-4-5-20251001' };
 }
 
+const llmRouter = require('../core/llm.router');
+
 /**
- * Calls a provider LLM and returns plain text.
- * Routes qwen/* and deepseek/* model IDs via OpenRouter automatically.
- * Falls back: Anthropic → OpenAI.
+ * Calls the LLM Router — direct APIs first, OpenRouter fallback, circuit breaker + retry built in.
+ * Cost tracking uses the requested model as billing approximation.
  */
 async function llmCall({ systemPrompt, userPrompt, maxTokens = 1024, temperature = 0.3, model, runId, agent }) {
-  const messages = [{ role: 'user', content: userPrompt }];
   const estimatedTokens = Math.round((systemPrompt || '').length / 4) + Math.round(userPrompt.length / 4) + maxTokens;
-
-  // ── OpenRouter branch: qwen/* and deepseek/* models ──────────────────────────
-  if (model && (model.startsWith('qwen/') || model.startsWith('deepseek/'))) {
-    if (!process.env.OPENROUTER_API_KEY) {
-      logger.warn('mesh.llmCall.openrouter_key_missing', { model, fallback: 'anthropic' });
-      // fall through to Anthropic below
-    } else {
-      const msgs = systemPrompt ? [{ role: 'system', content: systemPrompt }, ...messages] : messages;
-      const res = await OpenRouter.chat({ model, messages: msgs, temperature });
-      if (runId) logCost(runId, agent, model, estimatedTokens);
-      return res.text || res.reply || '';
-    }
-  }
-
-  // ── Anthropic branch ─────────────────────────────────────────────────────────
-  if (process.env.ANTHROPIC_API_KEY) {
-    const anthropicModel = model || process.env.MESH_MODEL_FULL || 'claude-haiku-4-5-20251001';
-    const res = await Anthropic.chat({ model: anthropicModel, messages, system: systemPrompt, max_tokens: maxTokens, temperature });
-    if (runId) logCost(runId, agent, anthropicModel, estimatedTokens);
-    return res.text || res.reply || '';
-  }
-
-  // ── OpenAI fallback ──────────────────────────────────────────────────────────
-  const openaiModel = model || process.env.AGENT_PLANNER_MODEL || 'gpt-4o-mini';
-  const res = await OpenAI.callOpenAI({ model: openaiModel, messages: systemPrompt ? [{ role: 'system', content: systemPrompt }, ...messages] : messages, temperature });
-  if (runId) logCost(runId, agent, openaiModel, estimatedTokens);
-  return res.text || res.reply || '';
+  const text = await llmRouter.call({ systemPrompt, userPrompt, maxTokens, temperature, model, runId, agent });
+  if (runId) logCost(runId, agent, model || 'claude-haiku-4-5-20251001', estimatedTokens);
+  return text;
 }
 
 /**
@@ -233,9 +223,22 @@ function beginStep(runId, role, description, inputs = {}) {
 
 function completeStep(runId, stepId, outputs) {
   const completed = now();
-  store.updateStep(runId, stepId, { status: 'COMPLETED', completedAt: completed, outputs });
+  const updatedStep = store.updateStep(runId, stepId, { status: 'COMPLETED', completedAt: completed, outputs });
   emitUI('mesh.step.completed', { runId, stepId, outputs });
   logger.info('mesh.step.completed', { runId, stepId });
+  const run = store.getRun(runId);
+  const index = Array.isArray(run?.steps) ? run.steps.findIndex((step) => step.stepId === stepId) : -1;
+  const startedMs = updatedStep?.startedAt ? Date.parse(updatedStep.startedAt) : NaN;
+  const completedMs = completed ? Date.parse(completed) : NaN;
+  writeAudit('agentmesh.step.completed', {
+    runId,
+    stepId: updatedStep?.stepId || stepId || `step-${index >= 0 ? index : 0}`,
+    model: updatedStep?.model || updatedStep?.agentId || updatedStep?.role || null,
+    inputLength: JSON.stringify(updatedStep?.input || updatedStep?.inputs || updatedStep?.prompt || '').length,
+    outputLength: JSON.stringify(updatedStep?.output || updatedStep?.outputs || updatedStep?.result || '').length,
+    durationMs: Number.isFinite(completedMs - startedMs) ? (completedMs - startedMs) : (updatedStep?.durationMs || 0),
+    costUSD: updatedStep?.cost || updatedStep?.costUSD || 0
+  });
   return outputs;
 }
 
@@ -250,6 +253,18 @@ function failStep(runId, stepId, error) {
 function skipStep(runId, stepId, role) {
   store.updateStep(runId, stepId, { status: 'SKIPPED', completedAt: now(), outputs: { skipped: true } });
   emitUI('mesh.step.skipped', { runId, stepId, role });
+}
+
+function extractDirectToolCall(plan) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) return null;
+  if (plan.tool !== 'write_file') return null;
+  if (typeof plan.path !== 'string' || typeof plan.content !== 'string') return null;
+  return {
+    tool: plan.tool,
+    path: plan.path,
+    content: plan.content,
+    mode: typeof plan.mode === 'string' ? plan.mode : 'overwrite'
+  };
 }
 
 // ─── individual agent implementations ────────────────────────────────────────
@@ -376,14 +391,10 @@ async function runMemory(runId, taskDescription, requiresMemory, ctx) {
     return { context: '', memories: [], skipped: true };
   }
   try {
-    const { createMemoryAdapter } = require('../../memory');
-    const memoryAdapter = createMemoryAdapter();
     const userId = (ctx && ctx.pki && ctx.pki.userId) || (ctx && ctx.userId) || 'guest';
-    const memories = await memoryAdapter.search(userId, taskDescription.slice(0, 200), 5);
-    const context = Array.isArray(memories)
-      ? memories.map(m => m.text || m.content || JSON.stringify(m)).join('\n')
-      : '';
-    return completeStep(runId, stepId, { context, memories: Array.isArray(memories) ? memories : [] });
+    const enriched = await memoryBroker.enrichContext(runId, taskDescription, 'memory-v1', userId);
+    const memories = await memoryBroker.retrieve(taskDescription.slice(0, 200), { userId, runId, agentRole: 'memory-v1' });
+    return completeStep(runId, stepId, { context: enriched, memories: Array.isArray(memories) ? memories : [] });
   } catch (err) {
     failStep(runId, stepId, err);
     return { context: '', memories: [], error: err.message };
@@ -396,6 +407,37 @@ async function runMemory(runId, taskDescription, requiresMemory, ctx) {
 async function runExecutor(runId, taskDescription, plan, ctx) {
   const stepId = beginStep(runId, 'executor', 'Execute plan steps', { planSteps: (plan.steps || []).length });
   try {
+    const directToolCall = extractDirectToolCall(plan);
+    if (directToolCall) {
+      const policy = evaluateToolPolicy({
+        tool: directToolCall.tool,
+        action: 'executor',
+        ctx: ctx || {},
+        payload: {
+          path: directToolCall.path,
+          mode: directToolCall.mode,
+          bytes: Buffer.byteLength(directToolCall.content, 'utf8')
+        }
+      });
+      if (policy.decision === 'deny') {
+        const denied = new Error(`tool_policy_denied:${policy.reason}`);
+        denied.statusCode = 403;
+        throw denied;
+      }
+      if (policy.decision === 'escalate') {
+        const escalated = new Error(`tool_policy_escalated:${policy.reason}`);
+        escalated.statusCode = 403;
+        throw escalated;
+      }
+      const toolResult = await writeFileTool.execute(directToolCall, ctx || {});
+      return completeStep(runId, stepId, {
+        success: true,
+        result: { direct_write_file: toolResult },
+        checkpoints: [{ step: 'direct_write_file', tool: directToolCall.tool, agent_role: 'executor', attempt: 1, success: true }],
+        ordered_steps: ['direct_write_file']
+      });
+    }
+
     if (!plan || !Array.isArray(plan.steps) || plan.steps.length === 0) {
       const err = new Error('Executor received an empty or invalid plan — no steps to execute.');
       logger.warn('mesh.executor.empty_plan', { runId, taskLength: taskDescription.length });
@@ -525,6 +567,16 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
     throw new Error(`Run ${runId} not found in store`);
   }
 
+  // License Gate: Live-Check aktiver Runs gegen Community-Limit (3)
+  const { activeRuns } = store.getStoreStats();
+  const limitCheck = checkAgentLimit(activeRuns);
+  if (!limitCheck.allowed) {
+    const err = new Error(`Agent limit reached: ${limitCheck.current}/${limitCheck.max} concurrent runs active. Upgrade to KI-OS Business to remove this limit.`);
+    err.statusCode = 429;
+    store.updateRun(runId, { status: 'FAILED', error: err.message });
+    throw err;
+  }
+
   store.updateRun(runId, { status: 'PLANNING', startedAt: now() });
   emitUI('mesh.run.started', { runId, taskDescription });
   logger.info('mesh.run.started', { runId, taskDescription: taskDescription.slice(0, 100) });
@@ -608,6 +660,19 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
       store.updateRun(runId, { status: 'SYNTHESIZING' });
       agentOutputs.synthesizer = await runSynthesizer(runId, taskDescription, agentOutputs, context, model);
 
+      // ─── Reflection Loop ────────────────────────────────────────────
+      let reflectionResult = evaluateReflection(taskDescription, agentOutputs.synthesizer?.reply || '');
+      let retryCount = 0;
+      while (reflectionResult.score < REFLECTION_MIN_SCORE && retryCount < REFLECTION_MAX_RETRIES) {
+        retryCount++;
+        store.updateRun(runId, { status: 'REFLECTING' });
+        emitUI('mesh.run.reflecting', { runId, retryCount, score: reflectionResult.score });
+        const retryPrompt = `Vorheriger Output unzureichend (Score: ${reflectionResult.score}). Verbesserungsgründe: ${reflectionResult.reasons.join(', ') || 'keine'}. Überarbeite: ${taskDescription}`;
+        agentOutputs.synthesizer = await runSynthesizer(runId, retryPrompt, agentOutputs, context, model);
+        reflectionResult = evaluateReflection(taskDescription, agentOutputs.synthesizer?.reply || '');
+      }
+      agentOutputs.reflection = { score: reflectionResult.score, passed: reflectionResult.passed, retryCount, reasons: reflectionResult.reasons };
+
     } catch (err) {
       // Policy denial, cancellation, or unrecoverable error
       const durationMs = Date.now() - startedAt;
@@ -625,8 +690,47 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
     const durationMs  = Date.now() - startedAt;
     const finalAnswer = agentOutputs.synthesizer ? (agentOutputs.synthesizer.reply || '') : '';
     const reviewScore = agentOutputs.reviewer    ? (agentOutputs.reviewer.score    || 0) : 0;
+    const reflectionScore = agentOutputs.reflection ? agentOutputs.reflection.score : null;
+    const reflectionPassed = agentOutputs.reflection ? agentOutputs.reflection.passed : null;
+    const retryCount = agentOutputs.reflection ? (agentOutputs.reflection.retryCount || 0) : 0;
     const costSummary = getCostSummary(runId);
-    runCostLog.delete(runId); // cleanup
+    let reflectionEvaluation = null;
+
+    runRegistry.recordRun({ runId, goal: store.getRun(runId)?.goal, userId: store.getRun(runId)?.userId || 'system', status: 'COMPLETED', stepCount: store.getRun(runId)?.steps?.length || 0, costUsd: costSummary?.totalUSD || 0, finishedAt: now(), startedAt: new Date(Date.now() - durationMs).toISOString() });
+
+    try {
+      reflectionEvaluation = await reflectionEngine.evaluateRun({
+        ...(store.getRun(runId) || {}),
+        runId,
+        taskDescription,
+        status: 'COMPLETED',
+        durationMs,
+        steps: store.getRun(runId)?.steps || [],
+        result: {
+          finalAnswer,
+          reviewScore,
+          reflectionScore,
+          reflectionPassed,
+          retryCount,
+          reflectionRetries: retryCount,
+          confidence: agentOutputs.synthesizer ? (agentOutputs.synthesizer.confidence || 0) : 0,
+          sources: agentOutputs.synthesizer ? (agentOutputs.synthesizer.sources || []) : [],
+          agentOutputs,
+          costSummary
+        },
+        costSummary
+      });
+      agentOutputs.runReflection = reflectionEvaluation;
+      emitUI('mesh.run.reflection.completed', {
+        runId,
+        scorecard: reflectionEvaluation.scorecard,
+        source: reflectionEvaluation.source
+      });
+    } catch (err) {
+      logger.warn('mesh.run.reflection.failed', { runId, error: err.message });
+    } finally {
+      runCostLog.delete(runId); // cleanup
+    }
 
     store.updateRun(runId, {
       status:            'COMPLETED',
@@ -636,16 +740,21 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
       result: {
         finalAnswer,
         reviewScore,
+        reflectionScore,
+        reflectionPassed,
+        retryCount,
+        reflectionRetries: retryCount,
         confidence:  agentOutputs.synthesizer ? (agentOutputs.synthesizer.confidence || 0) : 0,
         sources:     agentOutputs.synthesizer ? (agentOutputs.synthesizer.sources     || []) : [],
         agentOutputs,
-        costSummary
+        costSummary,
+        reflectionEvaluation
       }
     });
 
-    emitUI('mesh.run.completed', { runId, durationMs, reviewScore });
+    emitUI('mesh.run.completed', { runId, durationMs, reviewScore, reflectionScore, retryCount });
     logger.info('mesh.run.completed', {
-      runId, durationMs, reviewScore, executionStrategy: STRATEGY, skippedAgents,
+      runId, durationMs, reviewScore, reflectionScore, retryCount, executionStrategy: STRATEGY, skippedAgents,
       cost: { totalUSD: costSummary.totalUSD, savedPct: costSummary.savedPct }
     });
 
@@ -653,9 +762,13 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
       success:           true,
       finalAnswer,
       steps:             store.getRun(runId)?.steps || [],
-      metrics:           { durationMs, reviewScore, costSummary },
+      metrics:           { durationMs, reviewScore, reflectionScore, reflectionPassed, retryCount, costSummary, reflectionEvaluation },
       executionStrategy: STRATEGY,
-      skippedAgents
+      skippedAgents,
+      reflectionScore,
+      reflectionPassed,
+      retryCount,
+      reflectionEvaluation
     };
   }
 
@@ -680,4 +793,8 @@ async function executeMeshRun(runId, taskDescription, context = {}) {
 
 recoverOrphanRuns();
 
-module.exports = { executeMeshRun, requestCancel, recoverOrphanRuns, getExecutionConfig, getCostSummary };
+function getRecommendedRoles(taskDescription) {
+  return roleRegistry.getRolesForTask(taskDescription || '');
+}
+
+module.exports = { executeMeshRun, requestCancel, recoverOrphanRuns, getExecutionConfig, getCostSummary, getRecommendedRoles };

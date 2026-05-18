@@ -1,10 +1,18 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * Trust Center Service
  * 
  * Verwaltet Approvals (Freigaben) im Trust Center.
  * Ermöglicht das Genehmigen und Ablehnen von pending Approvals.
  * 
  * @module services/trust/trust.service
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * @license AGPL-3.0-only
  */
 
 const fs = require('fs').promises;

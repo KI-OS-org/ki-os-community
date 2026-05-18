@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * @file    intent.router.js
  * @desc    Dispatcht erkannte User-Intents an dedizierte Handler (Ghost Control,
  *          AgentMesh, Agent-Factory). Gibt null zurück wenn kein Handler greift
@@ -6,6 +12,7 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';

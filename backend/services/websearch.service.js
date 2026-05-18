@@ -1,8 +1,15 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * (c) 2026 KI-OS.org (v6.1) by Ingo Schaffer und Kimba
  * Datei: websearch.service.js
  * Diese Datei bündelt native Websuche über die Pflicht-Provider von KI-OS und trennt Capability-Auswahl von der eigentlichen Suche.
  * Falls kein nativer Provider verfügbar ist, kann optional auf einen externen Search-Provider wie Brave zurückgefallen werden.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

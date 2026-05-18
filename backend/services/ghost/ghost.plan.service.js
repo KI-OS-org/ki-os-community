@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * @file    ghost.plan.service.js
  * @desc    Generiert Ghost Control Step-Sequenzen aus einem User-Ziel via LLM.
  *          Kimba analysiert das Ziel und gibt navigierbare Schritte zurück,
@@ -6,11 +12,20 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
 
 const logger = require('../core/logger.service');
+const { storePlan, writeGhostAudit } = require('./ghost.security');
+
+const DEFAULT_PLAN_TIMEOUT_MS = 60000;
+const parsedPlanTimeout = Number(process.env.GHOST_PLAN_TIMEOUT_MS || DEFAULT_PLAN_TIMEOUT_MS);
+const GHOST_PLAN_TIMEOUT_MS = Number.isFinite(parsedPlanTimeout) && parsedPlanTimeout > 0
+  ? parsedPlanTimeout
+  : DEFAULT_PLAN_TIMEOUT_MS;
+const LLM_RETRY_DELAYS_MS = [1000, 2000, 4000];
 
 // ─── Bekannte data-ghost Selektoren im Frontend ───────────────────────────────
 const GHOST_REGISTRY = `
@@ -170,11 +185,88 @@ function parseJson(text) {
   }
 }
 
-async function callLLM(userPrompt, timeoutMs = 20000) {
+function validatePlanResult(result) {
+  if (!result || typeof result !== 'object') throw new Error('Ghost Plan schema violation: root object required');
+  if (typeof result.needsClarification !== 'boolean') throw new Error('Ghost Plan schema violation: needsClarification boolean required');
+
+  if (result.needsClarification) {
+    if (!result.question || typeof result.question !== 'string') throw new Error('Ghost Plan schema violation: question required');
+    return true;
+  }
+
+  const plan = result.plan;
+  if (!plan || typeof plan !== 'object') throw new Error('Ghost Plan schema violation: plan required');
+  for (const field of ['id', 'mode', 'title', 'description', 'steps']) {
+    if (plan[field] === undefined || plan[field] === null) throw new Error(`Ghost Plan schema violation: plan.${field} required`);
+  }
+  if (!['demo', 'build'].includes(plan.mode)) throw new Error('Ghost Plan schema violation: invalid mode');
+  if (!Array.isArray(plan.steps) || plan.steps.length > 10) throw new Error('Ghost Plan schema violation: steps array invalid');
+
+  const allowedTypes = new Set(['navigate', 'spotlight', 'click', 'fill', 'speak', 'wait', 'confirm']);
+  for (const [idx, step] of plan.steps.entries()) {
+    if (!step || typeof step !== 'object') throw new Error(`Ghost Plan schema violation: step ${idx + 1} object required`);
+    if (!step.id || typeof step.id !== 'string') throw new Error(`Ghost Plan schema violation: step ${idx + 1} id required`);
+    if (!allowedTypes.has(step.type)) throw new Error(`Ghost Plan schema violation: step ${idx + 1} type invalid`);
+    if (!step.callout || typeof step.callout !== 'string') throw new Error(`Ghost Plan schema violation: step ${idx + 1} callout required`);
+  }
+
+  return true;
+}
+
+function schemaResponseFormat() {
+  return {
+    type: 'json_schema',
+    json_schema: {
+      name: 'ghost_plan',
+      strict: true,
+      schema: GHOST_PLAN_SCHEMA,
+    },
+  };
+}
+
+function jsonObjectFallbackResponseFormat() {
+  return { type: 'json_object' };
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function retryDelayMs(attemptIndex) {
+  const base = LLM_RETRY_DELAYS_MS[Math.min(attemptIndex, LLM_RETRY_DELAYS_MS.length - 1)];
+  const jitter = Math.floor(Math.random() * 250);
+  return base + jitter;
+}
+
+async function withRetry(operation, label) {
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await operation(attempt);
+    } catch (error) {
+      lastError = error;
+      logger.warn('ghost.plan.llm.retry', {
+        provider: label,
+        attempt,
+        maxAttempts: 3,
+        error: error.message,
+      });
+      if (attempt < 3) {
+        await delay(retryDelayMs(attempt - 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function callLLM(userPrompt, timeoutMs = GHOST_PLAN_TIMEOUT_MS) {
   const messages = [{ role: 'user', content: userPrompt }];
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`Ghost Plan LLM timeout after ${timeoutMs}ms`)), timeoutMs)
-  );
+  const withTimeout = (call) => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Ghost Plan LLM timeout after ${timeoutMs}ms`)), timeoutMs)
+    );
+    return Promise.race([call, timeout]);
+  };
 
   // ERSTE WAHL: OpenRouter mit GHOST_PLAN_MODEL (default: Gemini 2.5 Flash Lite)
   // Begründung: Ghost Plan = strukturierter JSON-Output, kurzer Kontext.
@@ -184,30 +276,36 @@ async function callLLM(userPrompt, timeoutMs = 20000) {
     const OpenRouter = require('../providers/openrouter.provider');
     const model = process.env.GHOST_PLAN_MODEL || 'google/gemini-2.5-flash-lite';
     const msgs = [{ role: 'system', content: SYSTEM_PROMPT }, ...messages];
-    const call = OpenRouter.chat({ model, messages: msgs, temperature: 0.3, response_format: { type: 'json_object' } });
-    const res = await Promise.race([call, timeout]);
-    return res.text || res.reply || '';
+    return withRetry(async () => {
+      const call = OpenRouter.chat({ model, messages: msgs, temperature: 0.3, response_format: jsonObjectFallbackResponseFormat() });
+      const res = await withTimeout(call);
+      return res.text || res.reply || '';
+    }, `openrouter/${model}`);
   }
 
   // FALLBACK: Anthropic Claude Haiku — response_format nicht nativ unterstützt, Prompt-basiert
   if (process.env.ANTHROPIC_API_KEY) {
     const Anthropic = require('../providers/anthropic.provider');
     const model = process.env.MESH_MODEL_FULL || 'claude-haiku-4-5-20251001';
-    const call = Anthropic.chat({ model, messages, system: SYSTEM_PROMPT, max_tokens: 1500, temperature: 0.3 });
-    const res = await Promise.race([call, timeout]);
-    return res.text || res.reply || '';
+    return withRetry(async () => {
+      const call = Anthropic.chat({ model, messages, system: SYSTEM_PROMPT, max_tokens: 1500, temperature: 0.3 });
+      const res = await withTimeout(call);
+      return res.text || res.reply || '';
+    }, `anthropic/${model}`);
   }
 
   // LETZTER FALLBACK: OpenAI gpt-4o-mini — unterstützt response_format json_object nativ
   const OpenAI = require('../providers/openai.provider');
-  const call = OpenAI.callOpenAI({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-    temperature: 0.3,
-    response_format: { type: 'json_object' },
-  });
-  const res = await Promise.race([call, timeout]);
-  return res.text || res.reply || '';
+  return withRetry(async () => {
+    const call = OpenAI.callOpenAI({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      temperature: 0.3,
+      response_format: jsonObjectFallbackResponseFormat(),
+    });
+    const res = await withTimeout(call);
+    return res.text || res.reply || '';
+  }, 'openai/gpt-4o-mini');
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -219,11 +317,18 @@ async function callLLM(userPrompt, timeoutMs = 20000) {
  * @param {string} [mode]  - 'demo' | 'build' (default: 'demo')
  * @returns {Promise<{ needsClarification: boolean, question?: string, plan?: object }>}
  */
-async function generatePlan(goal, mode = 'demo') {
+async function generatePlan(goal, mode = 'demo', ctx = {}) {
   const sessionId = genId();
   const planId    = `ghost-plan-${genId()}`;
 
   logger.info('ghost.plan.generate', { goal: goal.slice(0, 100), mode, sessionId });
+  await writeGhostAudit('ghost_plan_start', {
+    planId,
+    sessionId,
+    mode,
+    goalLength: String(goal || '').length,
+    decisionReason: 'user_requested_ghost_plan',
+  }, { ...ctx, route: ctx.route || '/ghost/plan' }).catch(() => {});
 
   const userPrompt = `Ziel des Users: "${goal}"
 Modus: ${mode}
@@ -253,6 +358,11 @@ Generiere jetzt den Ghost Control Plan.`;
             id: step.id || `step-${idx + 1}`
           }));
       }
+
+      validatePlanResult(result);
+      result.plan = await storePlan(result.plan, { ...ctx, route: ctx.route || '/ghost/plan' }, { goal, status: 'planned' });
+    } else {
+      validatePlanResult(result);
     }
 
     logger.info('ghost.plan.generated', {
@@ -260,6 +370,13 @@ Generiere jetzt den Ghost Control Plan.`;
       needsClarification: result.needsClarification,
       stepCount: result.plan?.steps?.length || 0
     });
+    await writeGhostAudit('ghost_plan_end', {
+      planId: result.plan?.id || planId,
+      sessionId: result.plan?.sessionId || sessionId,
+      needsClarification: result.needsClarification,
+      stepCount: result.plan?.steps?.length || 0,
+      decisionReason: result.needsClarification ? 'clarification_required' : 'plan_signed_and_stored',
+    }, { ...ctx, route: ctx.route || '/ghost/plan' }).catch(() => {});
 
     return result;
   } catch (err) {
@@ -274,6 +391,12 @@ Generiere jetzt den Ghost Control Plan.`;
     try {
       logger.warn('ghost.plan.fallback', { sessionId, reason: isTimeout ? 'timeout' : 'llm_error' });
     } catch (_) { /* logger darf nicht crashen */ }
+    await writeGhostAudit('ghost_plan_failed', {
+      planId,
+      sessionId,
+      error: msg,
+      decisionReason: isTimeout ? 'llm_timeout' : 'llm_or_schema_error',
+    }, { ...ctx, route: ctx.route || '/ghost/plan' }).catch(() => {});
 
     return {
       needsClarification: true,
@@ -326,7 +449,7 @@ ANTWORT-FORMAT (NUR JSON, kein Markdown): Gleiche Struktur wie der ursprünglich
  */
 const MAX_REPLAN_ATTEMPTS = 2;
 
-async function replanOnVisionFail({ goal, mode = 'demo', originalPlan, failedStepIndex, visionResult, retryCount = 0 }) {
+async function replanOnVisionFail({ goal, mode = 'demo', originalPlan, failedStepIndex, visionResult, retryCount = 0, ctx = {} }) {
   if (!goal || typeof goal !== 'string') throw new Error('goal ist erforderlich');
   if (!originalPlan || !Array.isArray(originalPlan.steps)) throw new Error('originalPlan.steps fehlt');
   if (typeof failedStepIndex !== 'number' || failedStepIndex < 0) throw new Error('failedStepIndex muss ≥ 0 sein');
@@ -374,7 +497,7 @@ Generiere jetzt einen korrigierten Ghost Control Plan ab dem fehlgeschlagenen St
 Berücksichtige den Vision-Hinweis und wähle einen alternativen Weg.`;
 
   try {
-    const raw    = await callLLM(userPrompt, 20000);
+    const raw    = await callLLM(userPrompt);
     const result = parseJson(raw);
 
     if (result.plan) {
@@ -388,6 +511,11 @@ Berücksichtige den Vision-Hinweis und wähle einen alternativen Weg.`;
           .slice(0, 10)
           .map((step, idx) => ({ ...step, id: step.id || `replan-step-${idx + 1}` }));
       }
+
+      validatePlanResult(result);
+      result.plan = await storePlan(result.plan, { ...ctx, route: ctx.route || '/ghost/replan' }, { goal, status: 'replanned' });
+    } else {
+      validatePlanResult(result);
     }
 
     logger.info('ghost.replan.generated', {
@@ -416,4 +544,4 @@ Berücksichtige den Vision-Hinweis und wähle einen alternativen Weg.`;
   }
 }
 
-module.exports = { generatePlan, replanOnVisionFail, MAX_REPLAN_ATTEMPTS };
+module.exports = { generatePlan, replanOnVisionFail, MAX_REPLAN_ATTEMPTS, GHOST_PLAN_SCHEMA, validatePlanResult };

@@ -1,6 +1,13 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * KI-OS — (C) 2026 Ingo Schaffer
  * https://ki-os.org
+ * @license AGPL-3.0-only
  */
 /**
  * (c) 2026 KI-OS.org — Simulations Controller
@@ -8,6 +15,22 @@
  */
 'use strict';
 const axios = require('../core/http.client');
+const { isEnterprise } = require('../blauer-elefant/edition.guard');
+
+function enterpriseOnly(fn) {
+  return async function(req, res, ...args) {
+    if (!isEnterprise()) {
+      const resp = {
+        error: 'ENTERPRISE_REQUIRED',
+        message: 'Diese Funktion erfordert eine KI-OS Enterprise Edition.',
+        info: 'https://ki-os.org/enterprise',
+      };
+      if (res && typeof res.status === 'function') return res.status(403).json(resp);
+      return { statusCode: 403, body: resp };
+    }
+    return fn(req, res, ...args);
+  };
+}
 
 /* ─────────────────────────────────────────
    KIMBA MOMENT — Pipeline-Analyse
@@ -100,4 +123,4 @@ async function handleSimulationsRequest(path, method, body) {
   return { statusCode: 404, body: { success: false, error: 'Route nicht gefunden.' } };
 }
 
-module.exports = { handleSimulationsRequest };
+module.exports = { handleSimulationsRequest: enterpriseOnly(handleSimulationsRequest) };

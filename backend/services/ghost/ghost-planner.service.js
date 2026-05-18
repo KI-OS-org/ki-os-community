@@ -1,10 +1,18 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * Ghost Control — Ghost Planner Service
  * 
  * Generiert GhostPlans basierend auf User-Input.
  * Analysiert Intent und erstellt Step-Sequenz.
  * 
  * @module services/ghost/ghost-planner.service.js
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * @license AGPL-3.0-only
  */
 
 const uuid = require('uuid');

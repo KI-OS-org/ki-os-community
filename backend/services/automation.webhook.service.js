@@ -1,7 +1,14 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: automation.webhook.service.js
  * Diese Datei bildet den Webhook-Dispatcher für KI-OS und steuert Outbound- und Callback-Verarbeitung für Hub-Integrationen.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

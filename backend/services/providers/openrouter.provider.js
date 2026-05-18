@@ -1,15 +1,36 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * @file    openrouter.provider.js
  * @desc    HTTP-Client für OpenRouter API — Chat Completions, Web Search, Streaming.
  *          Unterstützt alle OpenRouter-Modelle inkl. optionalem response_format (JSON Enforcement).
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
 const axios = require('../core/http.client');
 const Observability = require('../core/observability.service');
+const outputFilter = require('../core/llm-output-filter.service');
+
+function normalizeContent(content) {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+        return content.map((part) => {
+            if (typeof part === 'string') return part;
+            if (part && typeof part.text === 'string') return part.text;
+            return '';
+        }).join('').trim();
+    }
+    if (content && typeof content.text === 'string') return content.text;
+    return '';
+}
 
 async function chat({ messages, model, temperature, response_format }) {
     try {
@@ -22,7 +43,10 @@ async function chat({ messages, model, temperature, response_format }) {
             { headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}` } }
         );
         Observability.recordProviderCall('openrouter', { model, api: 'chat.completions' });
-        return { text: res.data.choices[0].message.content, meta: { provider: 'openrouter', model } };
+        const content = res?.data?.choices?.[0]?.message?.content;
+        const raw = normalizeContent(content);
+        const filtered = outputFilter.filter(raw, { model });
+        return { text: filtered.flagged ? outputFilter.sanitize(raw, { model }) : raw, flagged: filtered.flagged, flags: filtered.flags, meta: { provider: 'openrouter', model } };
     } catch (e) {
         Observability.recordProviderFailure('openrouter', e, { model, api: 'chat.completions' });
         throw e;
@@ -79,5 +103,6 @@ async function webSearch({ query, count = 5, model }) {
 
 module.exports = {
     chat,
-    webSearch
+    webSearch,
+    normalizeContent
 };

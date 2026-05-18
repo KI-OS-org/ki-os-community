@@ -1,41 +1,64 @@
-KI-OS Community Edition — Strategic Components
-GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3, 19 November 2007
+KI-OS Community Edition
+GNU AFFERO GENERAL PUBLIC LICENSE — Version 3, 19 November 2007
 
 Copyright (C) 2026 Ingo Schaffer — https://ki-os.org
 
-IMPORTANT ADDITIONAL CONDITION (AGPL §7):
-  Any use of these components as a network-accessible service (SaaS, API,
-  hosted platform) requires publishing all modifications under AGPL-3.0.
-  Attribution "Based on KI-OS by Ingo Schaffer (ki-os.org)" must appear
-  in any user-facing interface or documentation.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMERCIAL USE RESTRICTION (AGPL-3.0, § 7 Additional Terms)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This software is licensed under AGPL-3.0 for non-commercial and
+open-source use only.
+
+COMMERCIAL USE — defined as any of the following — is NOT permitted
+under this license and requires a separate written commercial license:
+
+  (a) Use by a legal entity (company, agency, organisation, sole trader)
+      with the intent of generating revenue, directly or indirectly.
+
+  (b) Deployment of KI-OS or a modified version as a service (SaaS, API,
+      hosted platform, internal enterprise tool) within a commercial context.
+
+  (c) Integration of KI-OS into a product or service that is sold or
+      licensed to third parties.
+
+  (d) Use by more than one natural person sharing a single installation,
+      unless a valid KI-OS Business or Enterprise license is held.
+
+PERMITTED WITHOUT COMMERCIAL LICENSE:
+
+  ✓ Personal, non-commercial experimentation and learning
+  ✓ Academic research and teaching (non-profit institutions)
+  ✓ Open-source projects licensed under AGPL-3.0 or a compatible license
+  ✓ Non-profit organisations without commercial activities
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AGPL-3.0 NETWORK USE (§ 13)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you modify this software and deploy it as a network-accessible
+service, you MUST make your complete modified source code available
+to all users of that service under AGPL-3.0.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMERCIAL LICENSING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For commercial use, please contact:
+
+  enterprise@ki-os.org
+  https://ki-os.org/business
+
+KI-OS Business and Enterprise licenses are available and exempt
+the licensee from the restrictions above.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SPDX-License-Identifier: AGPL-3.0-only
-
 Full license text: https://www.gnu.org/licenses/agpl-3.0.html
 
----
+This program is distributed WITHOUT ANY WARRANTY; without even
+the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the GNU Affero General Public License for details.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, version 3 of the License.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-Key provisions relevant to KI-OS:
-
-§ 13 — Remote Network Interaction:
-  Notwithstanding any other provision of this License, if you modify the
-  Program, your modified version must prominently offer all users
-  interacting with it remotely through a computer network an opportunity
-  to receive the Corresponding Source of your version.
-
-This means: If you deploy a modified version of KI-OS strategic components
-as a web service, API, or cloud application — you MUST make your source
-code available to all users of that service.
-
-Contact for commercial licensing (to avoid AGPL obligations):
-  enterprise@ki-os.org
+Copyright (C) 2026 Ingo Schaffer — https://ki-os.org

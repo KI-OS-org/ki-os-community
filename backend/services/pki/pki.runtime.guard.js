@@ -1,17 +1,10 @@
 /**
- * KI-OS — (C) 2026 Ingo Schaffer
- * https://ki-os.org
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
  */
-"use strict";
-function assertProductionPki() {
-  const env = String(process.env.NODE_ENV || 'development').toLowerCase();
-  const pkiEnabled = String(process.env.PKI_ENABLED || 'false').toLowerCase() === 'true';
-  if (env === 'production' && !pkiEnabled) {
-    const error = new Error('production_pki_required');
-    error.statusCode = 503;
-    error.details = { env, pkiEnabled };
-    throw error;
-  }
-  return { ok: true, env, pkiEnabled };
-}
+'use strict';
+/* COMMUNITY_STUB: PKI guards disabled in local community mode */
+function assertProductionPki() {}
 module.exports = { assertProductionPki };

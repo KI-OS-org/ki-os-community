@@ -1,13 +1,20 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: auth.controller.js
  * Express-style controller for KI-OS local auth endpoints.
  * Returns { statusCode, body } — consistent with KI-OS controller pattern.
+ * @license AGPL-3.0-only
  */
 
 'use strict';
 
-const authService = require('./local.auth.service');
+const authService = require('./auth.community.service');
 
 /**
  * Extract and verify the Bearer token from request headers.
@@ -37,6 +44,24 @@ function errorResponse(err) {
  */
 async function handleAuthRequest(path, method, data = {}, headers = {}) {
   try {
+    // POST /auth/register
+    if (path === '/auth/register' && method === 'POST') {
+      const { email, password, name, role } = data;
+      if (!email || !password) {
+        return { statusCode: 400, body: { success: false, error: 'email and password are required' } };
+      }
+      try {
+        const user = authService.createUser({ email, password, name: name || email, role: role || 'user' });
+        const result = authService.authenticate(email, password);
+        return {
+          statusCode: 201,
+          body: { success: true, token: result.token, refreshToken: result.refreshToken, user },
+        };
+      } catch (err) {
+        return errorResponse(err);
+      }
+    }
+
     // POST /auth/login
     if (path === '/auth/login' && method === 'POST') {
       const { email, password } = data;

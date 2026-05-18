@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
  * @file    ghost.vision.service.js
  * @desc    Ghost Vision Phase 1 — Screenshot-Verifikation für Ghost Control Steps.
  *          Prüft via LLM Vision ob ein Ghost-Step korrekt ausgeführt wurde.
@@ -6,6 +12,7 @@
  * @author  Ingo Schaffer <ingo@ki-os.org>
  * @coauthor Kimba <kimba@ki-os.org>
  * @license AGPL-3.0-only — https://www.gnu.org/licenses/agpl-3.0.html
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  */
 
 'use strict';
@@ -18,6 +25,12 @@ const VISION_MODEL_ANTHROPIC  = process.env.GHOST_VISION_MODEL_ANTHROPIC  || 'cl
 const VISION_MODEL_OPENROUTER = process.env.GHOST_VISION_MODEL_OPENROUTER || 'openai/gpt-4o';
 const VISION_TIMEOUT_MS       = Number(process.env.GHOST_VISION_TIMEOUT_MS || 25000);
 const MAX_IMAGE_BYTES         = 5 * 1024 * 1024; // 5 MB
+const SUPPORTED_MAGIC = {
+  'image/png':  buffer => buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/jpeg': buffer => buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff,
+  'image/gif':  buffer => buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.subarray(0, 6).toString('ascii')),
+  'image/webp': buffer => buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP',
+};
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
 
@@ -66,7 +79,7 @@ function normalizeImage(imageData) {
   let mediaType = 'image/png';
 
   // Data-URL parsen
-  const dataUrlMatch = imageData.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+  const dataUrlMatch = imageData.match(/^data:(image\/[a-z+]+);base64,([A-Za-z0-9+/=\s]+)$/i);
   if (dataUrlMatch) {
     mediaType = dataUrlMatch[1].toLowerCase();
     base64    = dataUrlMatch[2];
@@ -78,10 +91,30 @@ function normalizeImage(imageData) {
     throw new Error(`Nicht unterstützter Bildtyp: ${mediaType}. Erlaubt: ${SUPPORTED.join(', ')}`);
   }
 
+  base64 = String(base64 || '').replace(/\s+/g, '');
+  if (!base64 || base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    throw new Error('Ungültiges Base64-Bildformat');
+  }
+
+  let decoded;
+  try {
+    decoded = Buffer.from(base64, 'base64');
+  } catch {
+    throw new Error('Ungültiges Base64-Bildformat');
+  }
+
+  if (!decoded.length || decoded.toString('base64').replace(/=+$/, '') !== base64.replace(/=+$/, '')) {
+    throw new Error('Ungültiges Base64-Bildformat');
+  }
+
   // Größen-Check
-  const byteSize = Math.ceil((base64.length * 3) / 4);
+  const byteSize = decoded.length;
   if (byteSize > MAX_IMAGE_BYTES) {
     throw new Error(`Bild zu groß: ${Math.round(byteSize / 1024)}KB. Maximum: ${MAX_IMAGE_BYTES / 1024}KB`);
+  }
+
+  if (!SUPPORTED_MAGIC[mediaType](decoded)) {
+    throw new Error(`Bildinhalt passt nicht zum deklarierten Format: ${mediaType}`);
   }
 
   return { base64, mediaType };
@@ -227,4 +260,4 @@ async function verifyStep(imageData, stepDescription, options = {}) {
   return { verified, confidence, description, ...(hint ? { hint } : {}), provider };
 }
 
-module.exports = { verifyStep };
+module.exports = { verifyStep, normalizeImage };

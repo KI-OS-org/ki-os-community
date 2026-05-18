@@ -1,3 +1,15 @@
+/**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
+ * Datei: startup-notice.js
+ * Startup Notice — KI-OS Service
+ * @license AGPL-3.0-only
+ */
 'use strict';
 /**
  * KI-OS Startup Notice

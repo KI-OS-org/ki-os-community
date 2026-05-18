@@ -1,4 +1,10 @@
 /**
+ * KI-OS Community Edition — Core Infrastructure
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: Apache License 2.0
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
  * (c) 2026 KI-OS.org by Ingo Schaffer und Kimba
  * Datei: swarm.controller.js
  * Swarm Memory REST API — 6 Endpunkte für POST/GET/DELETE.

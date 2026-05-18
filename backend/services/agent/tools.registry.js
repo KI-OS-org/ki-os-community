@@ -1,7 +1,14 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: tools.registry.js
  * Diese Datei registriert die im AgentMesh verfügbaren Tools und verbindet die Tool-Namen mit ihrer Ausführungslogik.
+ * @license AGPL-3.0-only
  */
 
 'use strict';
@@ -9,6 +16,7 @@ const WebSearch = require('../websearch.service');
 const { handleMemory } = require('../memory.controller');
 const { triggerConfiguredAutomation, triggerHubWebhook } = require('../automation.webhook.service');
 const { getDesktopStatus, observeDesktop, captureScreenshot, performDesktopAction, stopDesktopActions } = require('../desktop/desktop.service');
+const writeFileTool = require('../agentmesh/tools/write-file.tool');
 
 function normalizeMemorySearchResponse(res) {
   if (res && Array.isArray(res.items)) return res;
@@ -115,6 +123,20 @@ const TOOLS = {
       throw new Error('webhook_trigger requires either id or hub + flowId');
     }
   },
+  write_file: {
+    name: writeFileTool.TOOL_NAME,
+    description: 'Schreibt AgentMesh-Dateien in erlaubte KI-OS Projektpfade mit Governance-Guard.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: { type: 'string' },
+        content: { type: 'string' },
+        mode: { type: 'string' }
+      },
+      required: ['path', 'content']
+    },
+    execute: async (params, ctx) => await writeFileTool.execute(params || {}, ctx || {})
+  },
 
   // ── Qwen Builder Tools (via OpenRouter) ──────────────────────────────────────
   qwen_build: {
@@ -173,10 +195,10 @@ const TOOLS = {
 class ToolsRegistry {
   getAllTools() { return Object.values(TOOLS); }
   getTool(name) { return TOOLS[name]; }
-  async executeTool(name, params) {
+  async executeTool(name, params, ctx) {
     const tool = TOOLS[name];
     if (!tool) throw new Error(`Tool ${name} missing`);
-    return await tool.execute(params || {});
+    return await tool.execute(params || {}, ctx || {});
   }
 }
 const registry = new ToolsRegistry();

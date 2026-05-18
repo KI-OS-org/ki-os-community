@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KI-OS Markdown Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f0f6fc;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* Path Input */
+    .path-input-container {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .path-input {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #c9d1d9;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      width: 400px;
+    }
+
+    .path-input:focus {
+      outline: none;
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+    }
+
+    /* Buttons */
+    .btn {
+      background: #238636;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 6px;
+      padding: 8px 16px;
+      color: #f0f6fc;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #2ea043;
+    }
+
+    .btn-secondary {
+      background: #21262d;
+    }
+
+    .btn-secondary:hover {
+      background: #30363d;
+    }
+
+    .btn-danger {
+      background: #da3633;
+    }
+
+    .btn-danger:hover {
+      background: #f85149;
+    }
+
+    /* Main Layout */
+    .main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* File Explorer */
+    .file-explorer {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 16px;
+      height: calc(100vh - 140px);
+      overflow-y: auto;
+      position: sticky;
+      top: 84px;
+    }
+
+    .file-explorer h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-tree {
+      list-style: none;
+    }
+
+    .file-tree li {
+      margin: 4px 0;
+    }
+
+    .file-tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 13px;
+      color: #c9d1d9;
+      text-decoration: none;
+    }
+
+    .file-tree-item:hover {
+      background: #21262d;
+    }
+
+    .file-tree-item.active {
+      background: #1f6feb33;
+      color: #58a6ff;
+    }
+
+    .file-icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+    }
+
+    .folder-icon {
+      color: #58a6ff;
+    }
+
+    .md-icon {
+      color: #58a6ff;
+    }
+
+    /* Markdown Content */
+    .markdown-content {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 32px;
+      min-height: calc(100vh - 140px);
+    }
+
+    .markdown-body {
+      color: #c9d1d9;
+      line-height: 1.6;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4 {
+      color: #f0f6fc;
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .markdown-body h1 {
+      font-size: 2em;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 0.3em;
+    }
+
+    .markdown-body h2 {
+      font-size: 1.5em;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 0.3em;
+    }
+
+    .markdown-body h3 {
+      font-size: 1.25em;
+    }
+
+    .markdown-body p {
+      margin-bottom: 16px;
+    }
+
+    .markdown-body code {
+      background: rgba(110, 118, 129, 0.4);
+      padding: 0.2em 0.4em;
+      border-radius: 6px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 85%;
+    }
+
+    .markdown-body pre {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 16px;
+      overflow: auto;
+      margin-bottom: 16px;
+    }
+
+    .markdown-body pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .markdown-body ul,
+    .markdown-body ol {
+      margin-bottom: 16px;
+      padding-left: 2em;
+    }
+
+    .markdown-body li {
+      margin: 4px 0;
+    }
+
+    .markdown-body a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+
+    .markdown-body a:hover {
+      text-decoration: underline;
+    }
+
+    .markdown-body blockquote {
+      border-left: 4px solid #30363d;
+      padding-left: 16px;
+      color: #8b949e;
+      margin: 16px 0;
+    }
+
+    .markdown-body table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0;
+    }
+
+    .markdown-body th,
+    .markdown-body td {
+      border: 1px solid #30363d;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .markdown-body th {
+      background: #21262d;
+      font-weight: 600;
+    }
+
+    .markdown-body tr:nth-child(even) {
+      background: #0d1117;
+    }
+
+    .markdown-body img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+
+    /* Edit Mode */
+    .edit-mode .markdown-content {
+      display: none;
+    }
+
+    .editor {
+      display: none;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 16px;
+      min-height: calc(100vh - 140px);
+    }
+
+    .edit-mode .editor {
+      display: block;
+    }
+
+    .editor textarea {
+      width: 100%;
+      height: calc(100vh - 200px);
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 16px;
+      color: #c9d1d9;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    .editor textarea:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .editor-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #8b949e;
+    }
+
+    .empty-state h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: #c9d1d9;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0d1117;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #484f58;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .file-explorer {
+        position: static;
+        height: auto;
+        max-height: 300px;
+      }
+
+      .path-input {
+        width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <svg class="file-icon" width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+        <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
+      </svg>
+      KI-OS Markdown Viewer
+    </h1>
+
+    <div class="header-controls">
+      <div class="path-input-container">
+        <input
+          type="text"
+          class="path-input"
+          id="pathInput"
+          placeholder="Pfad zur .md Datei eingeben..."
+          value="/Users/is/KI-OS/README.md"
+        />
+        <button class="btn" onclick="loadFile()">Öffnen</button>
+      </div>
+
+      <button class="btn btn-secondary" id="editBtn" onclick="toggleEdit()">✏️ Edit</button>
+      <button class="btn btn-secondary" onclick="saveFile()">💾 Save</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <!-- File Explorer -->
+    <div class="file-explorer">
+      <h3>
+        <svg class="file-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.05 1.22 5.5 1 4.9 1H1.75zm2.93 1.28a.75.75 0 01.12.14l.9 1.2a1.75 1.75 0 001.4.7h6.75v8.5a.25.25 0 01-.25.25H1.75a.25.25 0 01-.25-.25V2.75a.25.25 0 01.25-.25h2.93z"/>
+        </svg>
+        Datei-Explorer
+      </h3>
+      <ul class="file-tree" id="fileTree">
+        <li>Loading...</li>
+      </ul>
+    </div>
+
+    <!-- Markdown Content -->
+    <div class="markdown-content" id="markdownContent">
+      <div class="empty-state">
+        <h2>📄 Wähle eine Markdown-Datei</h2>
+        <p>Wähle eine Datei im Explorer oder gib den Pfad oben ein</p>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor" id="editor">
+      <div class="editor-controls">
+        <button class="btn" onclick="saveFile()">💾 Save Changes</button>
+        <button class="btn btn-secondary" onclick="toggleEdit()">✖️ Cancel</button>
+      </div>
+      <textarea id="editorTextarea" placeholder="Markdown bearbeiten..."></textarea>
+    </div>
+  </div>
+
+  <!-- marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script>
+    let currentFilePath = '';
+    let isEditMode = false;
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFileTree();
+      
+      // Load file from URL parameter if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const fileParam = urlParams.get('file');
+      if (fileParam) {
+        document.getElementById('pathInput').value = fileParam;
+        loadFile();
+      }
+    });
+
+    // Load File Tree
+    async function loadFileTree() {
+      try {
+        const response = await fetch('/api/md-viewer/tree?path=/Users/is/KI-OS');
+        const tree = await response.json();
+        renderFileTree(tree, document.getElementById('fileTree'));
+      } catch (error) {
+        console.error('Error loading file tree:', error);
+        document.getElementById('fileTree').innerHTML = '<li>Error loading files</li>';
+      }
+    }
+
+    // Render File Tree
+    function renderFileTree(items, container, level = 0) {
+      container.innerHTML = '';
+      
+      if (!items || items.length === 0) {
+        container.innerHTML = '<li>Keine Dateien gefunden</li>';
+        return;
+      }
+
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.style.paddingLeft = `${level * 16}px`;
+
+        if (item.type === 'folder') {
+          const folderDiv = document.createElement('div');
+          folderDiv.className = 'file-tree-item';
+          folderDiv.innerHTML = `
+            <svg class="file-icon folder-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.05 1.22 5.5 1 4.9 1H1.75z"/>
+            </svg>
+            ${item.name}
+          `;
+          folderDiv.onclick = () => toggleFolder(item);
+          li.appendChild(folderDiv);
+
+          const subTree = document.createElement('ul');
+          subTree.className = 'file-tree';
+          subTree.style.display = 'none';
+          subTree.id = `folder-${item.path.replace(/\//g, '-')}`;
+          li.appendChild(subTree);
+
+          if (item.children) {
+            renderFileTree(item.children, subTree, level + 1);
+          }
+        } else if (item.type === 'file' && item.name.endsWith('.md')) {
+          const fileDiv = document.createElement('div');
+          fileDiv.className = 'file-tree-item';
+          fileDiv.innerHTML = `
+            <svg class="file-icon md-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"/>
+            </svg>
+            ${item.name}
+          `;
+          fileDiv.onclick = () => selectFile(item.path);
+          li.appendChild(fileDiv);
+        }
+
+        container.appendChild(li);
+      });
+    }
+
+    // Toggle Folder
+    function toggleFolder(item) {
+      const subTree = document.getElementById(`folder-${item.path.replace(/\//g, '-')}`);
+      if (subTree) {
+        subTree.style.display = subTree.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    // Select File
+    function selectFile(path) {
+      document.getElementById('pathInput').value = path;
+      loadFile();
+      
+      // Highlight active
+      document.querySelectorAll('.file-tree-item').forEach(el => {
+        el.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    }
+
+    // Load File
+    async function loadFile() {
+      const filePath = document.getElementById('pathInput').value.trim();
+      if (!filePath) {
+        alert('Bitte Dateipfad eingeben');
+        return;
+      }
+
+      currentFilePath = filePath;
+
+      try {
+        const response = await fetch(`/api/md-viewer/load?path=${encodeURIComponent(filePath)}`);
+        const data = await response.json();
+
+        if (data.success) {
+          // Render Markdown
+          const html = marked.parse(data.content);
+          document.getElementById('markdownContent').innerHTML = `
+            <div class="markdown-body">${html}</div>
+          `;
+
+          // Update editor
+          document.getElementById('editorTextarea').value = data.content;
+
+          // Update URL
+          const url = new URL(window.location);
+          url.searchParams.set('file', filePath);
+          window.history.pushState({}, '', url);
+        } else {
+          document.getElementById('markdownContent').innerHTML = `
+            <div class="empty-state">
+              <h2>❌ Fehler</h2>
+              <p>${data.error}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        document.getElementById('markdownContent').innerHTML = `
+          <div class="empty-state">
+            <h2>❌ Fehler</h2>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Toggle Edit Mode
+    function toggleEdit() {
+      isEditMode = !isEditMode;
+      document.body.classList.toggle('edit-mode', isEditMode);
+      document.getElementById('editBtn').textContent = isEditMode ? '👁️ View' : '✏️ Edit';
+    }
+
+    // Save File
+    async function saveFile() {
+      if (!currentFilePath) {
+        alert('Keine Datei geladen');
+        return;
+      }
+
+      const content = document.getElementById('editorTextarea').value;
+
+      try {
+        const response = await fetch('/api/md-viewer/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: currentFilePath,
+            content: content
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Datei gespeichert!');
+          toggleEdit();
+          loadFile();
+        } else {
+          alert('❌ Fehler: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Fehler: ' + error.message);
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Cmd/Ctrl + S = Save
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        saveFile();
+      }
+
+      // Cmd/Ctrl + E = Edit
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+        e.preventDefault();
+        toggleEdit();
+      }
+
+      // Cmd/Ctrl + O = Open file dialog
+      if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+        e.preventDefault();
+        document.getElementById('pathInput').focus();
+      }
+    });
+  </script>
+</body>
+</html>

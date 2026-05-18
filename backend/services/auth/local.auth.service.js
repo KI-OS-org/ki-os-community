@@ -1,8 +1,15 @@
 /**
- * (c) 2026 KI-OS.org (v6.0) by Ingo Schaffer und Kimba
+ * KI-OS Community Edition — Strategic Component
+ * Autor: Ingo Schaffer — https://ki-os.org
+ * Lizenz: GNU Affero General Public License v3.0 (AGPL-3.0)
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+/**
+ * (c) 2026 KI-OS.org (v1.6.0) by Ingo Schaffer und Kimba
  * Datei: local.auth.service.js
  * Local file-based auth service for KI-OS Community Edition.
  * No AWS/cloud dependencies — stores users in .ki-os-users.json at project root.
+ * @license AGPL-3.0-only
  */
 
 'use strict';

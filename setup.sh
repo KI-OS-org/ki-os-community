@@ -90,14 +90,59 @@ else
 fi
 echo ""
 
-# ── 3. Backend-Abhängigkeiten installieren ────────────────────────────────────
+# ── 3. Verzeichnisrechte prüfen und korrigieren ───────────────────────────────
+
+info "Prüfe Verzeichnisrechte..."
+CURRENT_USER="$(whoami)"
+if [[ "$(uname)" == "Darwin" ]]; then
+  DIR_OWNER="$(stat -f '%Su' . 2>/dev/null || echo 'unknown')"
+else
+  DIR_OWNER="$(stat -c '%U' . 2>/dev/null || echo 'unknown')"
+fi
+
+if [ "$DIR_OWNER" != "$CURRENT_USER" ]; then
+  warn "Verzeichnis gehört '${DIR_OWNER}' statt '${CURRENT_USER}' (Docker-Artefakt?)."
+  warn "Korrigiere mit: sudo chown -R ${CURRENT_USER} ."
+  if sudo chown -R "$CURRENT_USER" . 2>/dev/null; then
+    ok "Verzeichnisrechte korrigiert → Eigentümer: ${CURRENT_USER}"
+  else
+    fail "Konnte Rechte nicht korrigieren. Bitte manuell: sudo chown -R \$(whoami) ."
+  fi
+else
+  ok "Verzeichnisrechte OK (${CURRENT_USER})"
+fi
+
+if [ -d node_modules ]; then
+  if [[ "$(uname)" == "Darwin" ]]; then
+    NM_OWNER="$(stat -f '%Su' node_modules 2>/dev/null || echo 'unknown')"
+  else
+    NM_OWNER="$(stat -c '%U' node_modules 2>/dev/null || echo 'unknown')"
+  fi
+  if [ "$NM_OWNER" != "$CURRENT_USER" ]; then
+    warn "node_modules/ gehört '${NM_OWNER}' — korrigiere..."
+    sudo chown -R "$CURRENT_USER" node_modules 2>/dev/null && \
+      ok "node_modules/ Rechte korrigiert" || \
+      warn "node_modules/ Rechte-Fix fehlgeschlagen — npm install könnte Fehler melden"
+  fi
+fi
+echo ""
+
+# ── 4. Backend-Abhängigkeiten installieren ────────────────────────────────────
 
 info "Installiere Backend-Abhängigkeiten (npm install)..."
 npm install --silent || fail "npm install fehlgeschlagen. Internetverbindung und npm-Version prüfen."
 ok "Backend-Abhängigkeiten installiert."
 echo ""
 
-# ── 4. Frontend installieren und bauen ───────────────────────────────────────
+# ── 4a. Daten-Verzeichnis anlegen ────────────────────────────────────────────
+
+info "Erstelle data/ Verzeichnis..."
+mkdir -p data
+chmod 755 data
+ok "data/ bereit (SQLite-Datenbanken werden hier gespeichert)."
+echo ""
+
+# ── 5. Frontend installieren und bauen ───────────────────────────────────────
 
 [ -d "frontend/orbit-control" ] || fail "Verzeichnis 'frontend/orbit-control' nicht gefunden."
 
@@ -110,7 +155,7 @@ info "Baue Frontend (Next.js build — dauert 1-2 Min)..."
 ok "Frontend gebaut."
 echo ""
 
-# ── 5. App Bundles erstellen (macOS only) ─────────────────────────────────────
+# ── 6. App Bundles erstellen (macOS only) ─────────────────────────────────────
 
 if [[ "$(uname)" == "Darwin" ]]; then
   info "Erstelle App Bundles mit KI-OS Icon..."
