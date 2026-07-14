@@ -15,7 +15,7 @@
  */
 'use strict';
 const axios = require('../core/http.client');
-const { isEnterprise } = require('../blauer-elefant/edition.guard');
+const { isEnterprise } = require('../edition-guard/edition.guard');
 
 function enterpriseOnly(fn) {
   return async function(req, res, ...args) {

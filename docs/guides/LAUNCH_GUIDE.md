@@ -13,11 +13,11 @@
 [x] 88/88 tests passing (npm test)
 [x] build-community.js produces clean dist/ without errors
 [x] Enterprise code absent from Community build (not flagged, absent)
-[x] Blauer-Elefant edition protection active
+[x] edition-guard edition protection active
 [x] KI_OS_EDITION=enterprise in .env has no effect (cryptographic guard)
 [x] Community stubs: no schema leakage to AI-assisted reverse engineering
-[x] .blauer-elefant.pem in .gitignore
-[x] .blauer-elefant in .gitignore
+[x] .edition-guard.pem in .gitignore
+[x] .edition-guard in .gitignore
 ```
 
 ### Documentation
@@ -29,7 +29,7 @@
 [x] SECURITY.md
 [x] docs/LANCEDB.md
 [x] docs/LICENSE_MANAGER.md (internal — not in community dist)
-[x] docs/BLAUER_ELEFANT_SYSTEM.md (internal — not in community dist)
+[x] docs/edition-guard_SYSTEM.md (internal — not in community dist)
 [ ] docs/COMMUNITY_API.md
 [ ] CLAUDE_CODE_SETUP.md
 ```

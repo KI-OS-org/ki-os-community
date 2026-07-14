@@ -30,7 +30,7 @@ const { executeMeshRun, requestCancel } = require('./mesh.runtime');
 const { enforceConcurrentLimit } = require('../core/runtime.policy');
 const { list: listEvents } = require('../ui/ui.eventbus');
 const logger               = require('../core/logger.service');
-const { isEnterprise }     = require('../blauer-elefant/edition.guard');
+const { isEnterprise }     = require('../edition-guard/edition.guard');
 
 function now() { return new Date().toISOString(); }
 

@@ -42,6 +42,7 @@ const reflectionEngine   = require('../reflection/reflection.service');
 const roleRegistry       = require('./role-registry');
 const writeFileTool      = require('./tools/write-file.tool');
 const { writeAudit }     = require('../ui/ui.audit');
+const shadowStaff        = require('./shadow-staff.config');
 
 // Providers now handled by llm.router.js (with fallback chains + circuit breaker)
 
@@ -216,7 +217,7 @@ function beginStep(runId, role, description, inputs = {}) {
   step.status = 'RUNNING';
   step.startedAt = now();
   store.addStep(runId, step);
-  emitUI('mesh.step.started', { runId, stepId, role, description });
+  emitUI('mesh.step.started', { runId, stepId, role, displayRole: shadowStaff.getDisplayLabel(role), description });
   logger.info('mesh.step.started', { runId, stepId, role });
   return stepId;
 }
@@ -252,7 +253,7 @@ function failStep(runId, stepId, error) {
 
 function skipStep(runId, stepId, role) {
   store.updateStep(runId, stepId, { status: 'SKIPPED', completedAt: now(), outputs: { skipped: true } });
-  emitUI('mesh.step.skipped', { runId, stepId, role });
+  emitUI('mesh.step.skipped', { runId, stepId, role, displayRole: shadowStaff.getDisplayLabel(role) });
 }
 
 function extractDirectToolCall(plan) {
