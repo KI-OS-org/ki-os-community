@@ -1,416 +1,516 @@
-# KI-OS Community Edition — API Reference
+# KI-OS Community Edition API Reference (v1.23.0)
 
-> Achtung: Diese Datei enthält weiterhin ältere Beispiele und ist keine alleinige Source of Truth.
-> Aktueller Überblick: `docs/CURRENT_STATE.md`
-> Verifizierte Runtime-Pfade: `runtime/local/server.js`, `core/app.js`, `backend/routes/*`, `frontend/orbit-control/app/api/*`
-
-Base URL: `http://localhost:3000`  
-All requests/responses: `application/json`  
-Trace ID: every response includes `x-trace-id` header
+> **Hinweis**: Diese Dokumentation beschreibt die **Community Edition** von KI-OS (AGPL v3). Enterprise-only-Funktionen sind am Ende aufgeführt, aber nicht dokumentiert.
 
 ---
 
 ## System
 
-### Health Check
-```
-GET /health
-```
-Returns system health including memory, connectors, and supervisor status.
-
-```json
-{
-  "status": "ok",
-  "edition": "community",
-  "os_level": "1.8.1",
-  "checks": {
-    "runtime": { "ok": true },
-    "memory":  { "ok": true },
-    "connectors": { "ok": true, "total": 23 },
-    "supervisor": { "ok": true, "escalationCount": 0 }
-  }
-}
-```
-`status` values: `ok` · `degraded` · `down`
-
-### Readiness
-```
-GET /ready
-```
-Returns `200` when server is ready to accept requests.
-
-### Status Snapshot
-```
-GET /status
-```
-Full observability snapshot including request counts, latency, error rates.
-
-### Metrics
-```
-GET /metrics
-```
-Runtime metrics for monitoring (requests, tokens, latency).
+### Health & Status
+- `GET /health` — Systemstatus prüfen
+- `GET /ready` — Prüfung, ob System bereit ist
+- `GET /status` — Detaillierter Systemstatus
+- `GET /metrics` — Metriken im Prometheus-Format
 
 ---
 
 ## Chat
 
-### Send Message
-```
-POST /chat
-```
-
-```json
-{
-  "message": "What is the capital of France?",
-  "conversationId": "optional-session-id",
-  "context": {}
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "reply": "The capital of France is Paris.",
-  "model": "claude-sonnet-4-5",
-  "provider": "anthropic",
-  "tokens": { "input": 12, "output": 8 }
-}
-```
-
-### SSE Stream
-```
-GET /ui/stream
-```
-Server-Sent Events stream for real-time UI updates (agent runs, notifications, system events).
-
-```
-data: {"connected": true}
-data: {"type": "agent.run.updated", "runId": "...", "status": "running"}
-: heartbeat 1712345678901
-```
+### Chat & Stream
+- `POST /chat` — Nachricht an KIMBA senden
+- `GET /ui/stream` — SSE-Event-Stream für UI-Ereignisse
 
 ---
 
-## Agents
+## Agents (Registry)
 
-### List Agents
-```
-GET /agents
-```
-
-### Agent Stats
-```
-GET /agents/stats
-```
-
-### Get Agent
-```
-GET /agents/:id
-```
+### Agentenverwaltung
+- `GET /agents` — Liste aller Agenten
+- `GET /agents/stats` — Statistiken zu Agenten
+- `GET /agents/:id` — Einzelner Agent
 
 ---
 
 ## AgentMesh — Multi-Agent Runs
 
-### Start a Run
-```
-POST /agentmesh/runs
-```
-
-```json
-{
-  "task": "Research competitors and write a summary",
-  "agentIds": ["researcher", "writer"],
-  "maxParallel": 3
-}
-```
-
-> Community Edition: max 3 concurrent runs
-
-### List Runs
-```
-GET /agentmesh/runs
-```
-
-### Get Run
-```
-GET /agentmesh/runs/:runId
-```
-
-### Cancel Run
-```
-DELETE /agentmesh/runs/:runId
-```
+### Run-Management
+- `POST /agentmesh/runs` — Neuen Run starten
+- `GET /agentmesh/runs` — Liste aller Runs
+- `GET /agentmesh/runs/:id` — Einzelner Run
 
 ---
 
-## Memory
+## A2A Protocol (Agent-to-Agent)
 
-### Get Memory
-```
-GET /memory
-GET /memory/:key
-```
+### Kommunikation & Nachrichten
+- `POST /agents` — Agent registrieren
+- `DELETE /agents/:id` — Agent abmelden
+- `GET /agents/capabilities/:capability` — Capabilities abrufen
+- `POST /agents/:id/heartbeat` — Heartbeat senden
+- `PATCH /agents/:id/status` — Status aktualisieren
+- `POST /send` — Nachricht senden
+- `POST /broadcast` — Broadcast-Nachricht
+- `GET /messages/:agentId` — Nachrichten eines Agenten
+- `DELETE /messages/:id` — Nachricht als gelesen markieren
+- `POST /messages/:id/complete` — Nachricht abschließen
+- `GET /stats` — Kommunikationsstatistiken
 
-### Store Memory
-```
-POST /memory
-```
-```json
-{ "key": "user_preference", "value": "prefers concise answers" }
-```
+---
 
-### Delete Memory
-```
-DELETE /memory/:key
-```
+## Memory (Generisch)
 
-### Search Memory
-```
-POST /memory/search
-```
-```json
-{ "query": "user preferences", "limit": 10 }
-```
+### Speichern & Suchen
+- `GET/POST /memory/retrieve` — Memory abrufen/speichern
+- `/memory/*` — Weitere Memory-Operationen (Get/Store/Delete/Search)
+
+---
+
+## Swarm Memory — /api/swarm
+
+### Kollektives Gedächtnis
+- `POST /store` — Text speichern
+- `POST /search` — Ähnlichkeitssuche
+- `GET /stats` — Statistiken
+- `GET /entries` — Einträge abrufen (limit, type)
+- `POST /feedback` — Feedback senden (positive/negative)
+- `GET /context` — Kontext aus Broker-Suche
+- `POST /brief` — Formatierter Memory-Briefing für Task
 
 ---
 
 ## Routing
 
-### Resolve Route
-```
-POST /routing/resolve
-```
-Returns which provider/model KIMBA would select for a given message.
-
-### Routing Profiles
-```
-GET /routing/profiles
-```
-
-### Routing Decisions (History)
-```
-GET /routing/decisions
-```
-
-### Provider Scorecards
-```
-GET /routing/scorecards
-```
+### Routing & Entscheidungen
+- `GET /routing/resolve` — Routing-Entscheidung
+- `GET /routing/profiles` — Routing-Profile
+- `GET /routing/decisions` — Entscheidungen abrufen
+- `GET /routing/scorecards` — Scorecards abrufen
 
 ---
 
-## Governance
+## Governance — /api/governance
 
-### List Policies
-```
-GET /governance/policies
-```
-
-### Policy Registry
-```
-GET /governance/registry
-```
-
-### Simulate Policy
-```
-POST /governance/simulate
-```
-Tests a message against the policy engine without executing it.
+### Governance & Policy
+- `GET /status` — Governance-Status
+- `GET /policy` — Aktuelle Policy
+- `POST /audit` — Audit-Log (runId, event)
+- `GET /governance/policies` — Policies abrufen
+- `GET /governance/registry` — Registry abrufen
+- `POST /governance/simulate` — Policy simulieren
 
 ---
 
 ## Privacy
 
-### Analyze Text
-```
-POST /privacy/analyze
-```
-Detects PII (names, emails, phone numbers, etc.).
-
-```json
-{ "text": "My name is John Doe, email: john@example.com" }
-```
-
-### Mask PII
-```
-POST /privacy/mask
-```
-Returns text with PII replaced by tokens.
-
-### Demask
-```
-POST /privacy/demask
-```
-Restores original values from masked tokens (session-scoped).
+### Datenschutz
+- `POST /privacy/analyze` — Inhalt auf Sensibilität prüfen
+- `POST /privacy/mask` — Sensible Daten maskieren
+- `POST /privacy/demask` — Maskierte Daten entschlüsseln
 
 ---
 
 ## Files
 
-### Upload File
-```
-POST /files/upload
-```
-Multipart form-data. Supported: PDF, Excel, images, text.
-
-### File Fabric (Search)
-```
-POST /files/fabric
-```
-Semantic search across uploaded files.
-
-### List Files
-```
-GET /files
-```
-
-### Get File
-```
-GET /files/:id
-```
+### Dateiverwaltung
+- `POST /files/upload` — Datei hochladen
+- `GET /files/fabric` — Dateien über Fabric suchen
+- `GET /files` — Liste aller Dateien
+- `GET /files/:id` — Einzelne Datei abrufen
 
 ---
 
 ## Connectors (MCP)
 
-### MCP Capabilities
-```
-GET /mcp/capabilities
-```
+### Generische Connector-API
+- `GET /connectors/capabilities` — Unterstützte Capabilities
+- `GET /connectors/health` — Connector-Status
+- `POST /connectors/resolve` — Connector auflösen
+- `GET /connectors` — Connector-Manifest abrufen
 
-### MCP Health
-```
-GET /mcp/health
-```
+---
 
-### Invoke MCP Tool
-```
-POST /mcp/invoke
-```
-```json
-{
-  "tool": "slack.send_message",
-  "params": { "channel": "#general", "text": "Hello" }
-}
-```
+## MCP Gateway — /mcp/gateway
 
-### MCP Manifest
-```
-GET /mcp/manifest
-```
+### Gateway-Funktionen
+- `GET /status` — Gateway-Status
+- `GET /sse` — SSE-Stream (wenn aktiviert)
+- `POST /message` — Nachricht senden
+
+---
+
+## MCP↔OpenAPI Bridge — /mcp/bridge
+
+### Bridge-Funktionen
+- `POST /register` — Tool registrieren
+- `GET /tools` — Tools abrufen
+- `POST /execute` — Tool ausführen
+- `DELETE /spec/:id` — Spezifikation löschen
+- `GET /specs` — Spezifikationen abrufen
 
 ---
 
 ## Automation
 
-### Webhook
-```
-POST /automation/webhook
-```
-Triggers an automation workflow via incoming webhook.
+### Automatisierung
+- `POST /automation/webhook` — Webhook auslösen
 
 ---
 
 ## Media
 
-### Process Image
-```
-POST /media/image
-```
-Vision analysis on uploaded or URL-referenced image.
-
-### Process Video
-```
-POST /media/video
-```
-
-### Media Status
-```
-GET /media/status?jobId=...
-```
+### Medienverarbeitung
+- `POST /media/image` — Bild verarbeiten
+- `POST /media/video` — Video verarbeiten
+- `GET /media/status` — Medienstatus abrufen
 
 ---
 
 ## Self-Repair
 
-### Status
-```
-GET /selfrepair
-GET /selfrepair/stats
-```
-
-### Trigger Manual Repair
-```
-POST /selfrepair/trigger
-```
+### Selbstheilung
+- `GET /selfrepair/stats` — Statistiken zur Selbstheilung
+- `POST /selfrepair/trigger` — Selbstheilung manuell auslösen
 
 ---
 
 ## Notifications
 
-```
-GET  /notifications/feed
-GET  /notifications/count
-POST /notifications/mark-all-read
-```
+### Benachrichtigungen
+- `GET /notifications/feed` — Benachrichtigungsfeed
+- `GET /notifications/count` — Anzahl ungelesener Benachrichtigungen
+- `POST /notifications/mark-all-read` — Alle als gelesen markieren
 
 ---
 
-## Admin (requires admin role)
+## AI Service Platform — /api/platform
 
-```
-GET  /admin/config
-POST /admin/config
-GET  /admin/stats
-POST /admin/reset
-```
+### KI-Dienste verwalten
+- `GET /services` — Alle Dienste + Status
+- `GET /services/:id` — Einzelner Dienst
+- `POST /services/:id/enable` — Dienst aktivieren
+- `POST /services/:id/disable` — Dienst deaktivieren
+- `GET /backends` — Verfügbare KI-Backends
+- `GET /backends/:id` — Einzelnes Backend
+- `POST /route` — Route für Anfrage bestimmen
+- `GET /costs` — Kostenübersicht
+
+---
+
+## ClawHub-Kompatibilitäts-Layer — /api/claws
+
+### Claw-Skills verwalten
+- `POST /scan` — Claw-Skill scannen (Ampel: rot/gelb/grün)
+- `POST /install` — Skill installieren (403 bei rot)
+- `DELETE /uninstall/:name` — Skill deinstallieren
+- `GET /list` — Liste installierter Skills
+- `GET /docker-status` — Docker-Status
+- `POST /run/:name` — Skill ausführen (mit Re-Scan)
+
+---
+
+## Channel-Parität — /api/channels
+
+### Kanäle verwalten
+- `GET /status` — Status aller Kanäle
+- `GET /status/:name` — Einzelner Kanal
+- `POST /:name/start` — Kanal starten
+- `POST /:name/stop` — Kanal stoppen
+- `POST /:name/send` — Nachricht senden
+
+---
+
+## SkillForge — /api/skillforge
+
+### Skills erstellen & genehmigen
+- `POST /propose` — Skill-Vorschlag einreichen
+- `GET /proposals` — Liste der Vorschläge
+- `GET /proposals/:id` — Einzelner Vorschlag
+- `POST /proposals/:id/approve` — Vorschlag genehmigen
+- `POST /proposals/:id/reject` — Vorschlag ablehnen
+
+---
+
+## Timeline — /api/timeline
+
+### Aktivitätsverlauf
+- `POST /append` — Eintrag hinzufügen
+- `GET /recent` — Letzte Einträge
+- `GET /search` — Semantische Suche
+- `GET /blacklist` — Blacklist abrufen
+- `POST /blacklist` — Apps zur Blacklist hinzufügen
+- `POST /blacklist/add` — Einzelne App hinzufügen
+- `POST /blacklist/remove` — Einzelne App entfernen
+- `POST /delete-range` — Bereich löschen
+
+---
+
+## Skills Registry — /api/skills
+
+### Skill-Verwaltung
+- `GET /` — Alle Skills
+- `POST /invoke` — Skill aufrufen
+- `POST /install` — Skill installieren
+- `DELETE /uninstall/:name` — Skill deinstallieren
+- `GET /catalog` — Skill-Katalog
+- `GET /installed` — Installierte Skills
+
+---
+
+## Control Tower — /api/tower
+
+### Überwachung & Steuerung
+- `GET /runs` — Runs abrufen
+- `GET /costs` — Kostenübersicht
+- `GET /costs/session` — Session-Kosten
+- `DELETE /costs/session` — Session-Kosten löschen
+- `GET /costs/live` — Live-Kosten
+- `GET /connectors` — Connector-Status
+- `GET /policy` — Aktuelle Policy
+- `POST /policy/override` — Policy überschreiben
+- `DELETE /policy/override` — Override entfernen
+
+---
+
+## Hierarchical Teams — /api/hierarchical
+
+### Team-Management
+- `POST /run` — Run für Team starten
+- `GET /teams` — Teams abrufen
+- `GET /stats` — Team-Statistiken
+
+---
+
+## Missions & War Rooms — /api/missions
+
+### Missionen & Entscheidungen
+- `GET /inbox` — Inbox abrufen
+- `GET /seeds` — Seeds abrufen
+- `POST /seeds/:id/confirm` — Seed bestätigen
+- `POST /seeds/:id/dismiss` — Seed verwerfen
+- `GET /warrooms` — War Rooms abrufen
+- `GET /warrooms/:id` — Einzelner War Room
+- `PATCH /warrooms/:id` — War Room aktualisieren
+- `POST /warrooms/:id/decision` — Entscheidung treffen
+- `POST /warrooms/:id/next-step` — Nächsten Schritt setzen
+- `POST /warrooms/:id/close` — War Room schließen
+- `GET /stream` — Stream abrufen
+- `POST /process` — Prozess starten
+
+---
+
+## Signal Router — /api/signals
+
+### Signalverarbeitung
+- `GET /status` — Router-Status
+- `POST /route` — Signal weiterleiten
+- `GET /queue` — Warteschlange abrufen
+- `POST /flush` — Queue leeren
+- `GET /channels` — Kanäle abrufen
+- `GET /stream` — Stream abrufen
+
+---
+
+## Decision Engine — /api/decisions
+
+### Entscheidungslogik
+- `POST /compress/:warRoomId` — Entscheidung komprimieren
+- `GET /capsule/:warRoomId` — Entscheidungskapsel abrufen
+- `GET /capsules` — Kapseln abrufen
+- `GET /models` — Modelle abrufen
+- `POST /score` — Score berechnen
+
+---
+
+## Earpiece — /api/earpiece
+
+### Meeting & Whisper-Funktionen
+- `GET /status` — Status abrufen
+- `POST /meeting/start` — Meeting starten
+- `POST /meeting/pre` — Vorbereitung
+- `POST /meeting/end` — Meeting beenden
+- `POST /whisper` — Whisper senden
+- `GET /stream` — Stream abrufen
+- `GET /transcript` — Transkript abrufen
+
+---
+
+## Audio Cache — /api/audio-cache
+
+### Audioverwaltung
+- `GET /stats` — Statistiken
+- `GET /entries` — Einträge abrufen
+- `POST /search` — Audio suchen
+- `DELETE /clear` — Cache leeren
+- `GET /catalog` — Katalog abrufen
+
+---
+
+## Persona — /api/persona
+
+### Persona-Management
+- `GET /` — Aktuelle Persona
+- `POST /` — Neue Persona setzen
+- `DELETE /` — Persona zurücksetzen
+
+---
+
+## Autopsy — /api/autopsy
+
+### Run-Analyse
+- `GET /` — Liste der Runs
+- `GET /:runId` — Einzelner Run
+
+---
+
+## WhatsApp / Meta — /api/whatsapp
+
+### WhatsApp-Integration
+- `POST /inbound` — Twilio-Webhook
+- `GET /seeds` — Seeds abrufen
+- `GET /meta/verify` — Meta-Verifizierung
+- `POST /meta/inbound` — Meta-Inbound-Nachricht
+
+---
+
+## Microsoft Teams/Outlook (Agent365) — /api/agent365
+
+### Agent365-Integration
+- `POST /message` — Nachricht senden (signaturvalidiert)
+- `GET /manifest` — Manifest abrufen
+- `GET /status` — Status abrufen
+
+---
+
+## Markdown Viewer — /api/md-viewer
+
+### Markdown-Ansicht
+- `GET /tree` — Verzeichnisstruktur
+- `GET /load` — Datei laden
+- `POST /save` — Datei speichern
+
+---
+
+## Sales / CRM — /api/sales
+
+### Vertrieb & Kontakte
+- `GET /pipeline` — Pipeline abrufen
+- `GET /contacts` — Kontakte abrufen
+- `POST /contacts` — Kontakt erstellen
+- `PUT /contacts/:id/status` — Status ändern
+- `POST /contacts/:id/offers` — Angebot erstellen
+- `GET /contacts/overdue` — Überfällige Kontakte
+- `POST /dna/profile` — Profil erstellen/abrufen
+- `POST /dna/interview` — Interview erstellen/abrufen
+- `POST /dna/style` — Stil erstellen/abrufen
+- `POST /dna/linkedin/url` — LinkedIn-URL importieren
+- `POST /dna/linkedin/csv` — LinkedIn-CSV importieren
+- `POST /dna/cv` — Lebenslauf importieren
+- `POST /contacts/:id/outreach` — Outreach erstellen/abrufen
+- `PUT /outreach/:draftId/status` — Outreach-Status ändern
+- `GET /followups/due` — Fällige Follow-ups
+- `GET /catalog` — Katalog abrufen
+- `GET /catalog/:sku` — Einzelnes Produkt
+- `POST /catalog/import` — Katalog importieren
+- `PUT /catalog/:sku/price` — Preis ändern
+- `GET /pricing/rules` — Preisregeln
+- `POST /pricing/rules` — Regel erstellen
+- `POST /pricing/calculate` — Preis berechnen
+- `POST /pricing/quote` — Angebot erstellen
+
+---
+
+## Mobile API
+
+### Mobile Endpunkte
+- `GET /api/mobile/fs/tree` — Dateibaum abrufen
+- `GET /api/mobile/fs/file` — Datei abrufen
+- `POST /api/mobile/fs/mkdir` — Verzeichnis erstellen
+- `POST /api/mobile/fs/init` — FS initialisieren
+- `POST /api/mobile/ask` — Frage stellen
+- `POST /api/mobile/run-claude` — Claude ausführen
+- `POST /api/voice/transcribe` — Transkription
+- `GET /api/voice/voices` — Stimmen abrufen
+- `POST /api/voice/tts` — Text-to-Speech
+
+---
+
+## Auth & Rollen
+
+### Authentifizierung & Rollen
+- `POST /api/auth/login` — Login
+- `POST /api/auth/register` — Registrieren
+- `POST /api/auth/refresh` — Token erneuern
+- `POST /api/auth/logout` — Logout
+- `GET /api/auth/me` — Eigenen Nutzer abrufen
+- `GET /api/roles` — Rollen abrufen
+- `GET /api/roles/:name` — Einzelne Rolle
+- `POST /api/roles/recommend` — Rolle empfehlen
+
+---
+
+## Handoff & Scorecard & Intelligence & License
+
+### Handoff & Bewertung
+- `GET /api/handoff/:runId` — Handoff abrufen
+- `GET /api/scorecard/scorecard` — Scorecard abrufen
+- `POST /api/scorecard/scorecard/record` — Eintrag hinzufügen
+- `GET /api/scorecard/scorecard/recommend` — Empfehlung abrufen
+- `GET /api/intelligence/proposals` — Vorschläge abrufen
+- `POST /api/intelligence/scan` — Scan durchführen
+- `PATCH /api/intelligence/proposals/:id` — Vorschlag aktualisieren
+- `GET /api/intelligence/router/recommend` — Router-Empfehlung
+- `GET /api/license/status` — Lizenzstatus
+- `POST /api/license/refresh` — Lizenz erneuern
+
+---
+
+## n8n Integration
+
+### n8n-Workflows
+- `POST /n8n/webhook/:event` — Webhook auslösen
+- `GET /n8n/status` — n8n-Status
+- `GET /n8n/workflows` — Workflows abrufen
+- `POST /n8n/workflows/:id/trigger` — Workflow auslösen
+- `GET /n8n/callbacks` — Callbacks abrufen
 
 ---
 
 ## Error Format
 
-All errors follow:
-
 ```json
-{
-  "success": false,
-  "error": "short_error_code",
-  "message": "Human-readable description"
-}
+{ "success": false, "error": "error_code", "runId": "optional-run-id" }
 ```
 
-Common status codes:
-
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 400 | Bad request / invalid input |
-| 401 | Unauthorized |
-| 403 | Enterprise only (not available in Community) |
-| 429 | Rate limited |
-| 500 | Internal error |
-| 503 | Service down (check `/health`) |
+HTTP-Status je nach Fehlerart: `400` ungültige Parameter, `401`/`403` Auth/Berechtigung, `404` nicht gefunden, `409` Konflikt/Sperre, `423` gesperrt, `500` interner Fehler, `503` deaktiviert/nicht unterstützt.
 
 ---
 
 ## Enterprise-Only Endpoints
 
-The following return `403 enterprise_only` in Community Edition:
+Folgende Funktionen sind **nicht Teil der Community Edition** und liefern bei Zugriff einen `403 enterprise_only`-Fehler:
 
-- `/tenant/*` — Multi-tenancy
-- `/dag/*` — DAG Execution Engine
-- `/federation/*` — Cross-org data sharing
-- `/state/fabric/*` — Enterprise state fabric
-- `/desktop/*` — Desktop observation
-- `/workspace/*` — Advanced workspace features
-- `/voice/*` — Voice synthesis
-- `/heygen/*` — Video avatar
+- **Multi-Tenancy** (`/tenant/*`)
+- **Federation** (`/federation/*`)
+- **Economic/Federation-Optimizer** (`/economic/*`)
+- **DAG Execution Engine** (`/dag/*`)
+- **Workspace Advanced Features** (`/workspace/*`)
+- **State Fabric** (`/state/*`)
+- **Desktop Control** (Beobachtung & Aktionen wie klicken/tippen/Apps steuern)
+- **Ghost Control** (`/api/ghost`)
+- **Compliance/Audit-Reports** (`/api/compliance`)
+- **Trace-Analytics** (`/api/analytics`)
+- **Voice Synthesis/Cloning** (`/api/voice-clone`, HeyGen Video-Avatar)
+- **Retail/Sales-Erweiterungen** (basierend auf `backend/services/retail`/`retail-brain`)
+- **Simulations** (`/simulations/*`)
+- **Packs** (`/packs/*`)
+- **PKI/Verifier-Services**
+- **Resilience-Services**
+- **Campaigns** (`/campaign/*`) – nur Enterprise-Connectoren wie SAP/Salesforce/Teams
+
+> Hinweis: Die Basis-Campaign-Engine ist in der Community Edition enthalten.
 
 **Enterprise inquiry:** [enterprise@ki-os.org](mailto:enterprise@ki-os.org)
 
 ---
 
-*KI-OS Community Edition v1.1.0 — AGPL-3.0 — [ki-os.org](https://ki-os.org)*
+*KI-OS Community Edition v1.23.0 — AGPL-3.0 — [ki-os.org](https://ki-os.org)*
