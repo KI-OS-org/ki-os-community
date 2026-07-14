@@ -32,7 +32,7 @@
 
 - Vollständige Session-Aufzeichnung + Replay-Funktionalität
 - **Entfernt am 2026-07-12** (Sprint S1, Repo-Diät) — genuin verwaister Code, keine
-  Kern-Abhängigkeit, siehe [[project_kios_openclaw_pivot]]
+  Kern-Abhängigkeit
 
 ## v1.17.0 — Reflection Engine (2026-04-22)
 
