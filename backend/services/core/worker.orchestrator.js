@@ -23,6 +23,9 @@ const { evaluatePrivacyInput } = require('../privacy/privacy.guard');
 const { canExecute, recordFailure, recordSuccess } = require('../resilience/circuit-breaker.service');
 const { enqueueDeadLetter } = require('../resilience/dlq.service');
 const logger = require('./logger.service');
+const { applyToSystemPrompt } = require('../kimba/persona.profiles');
+const { getPersona } = require('../kimba/persona.memory');
+const { injectPushback } = require('../kimba/pushback.injector');
 
 const Providers = {
     openai: require('../providers/openai.provider'),
@@ -178,7 +181,16 @@ async function executeTask(task, repairInstruction = null, options = {}) {
 
     let sources = [];
     let originalQuery = task.input_data.query;
-    let systemPrompt = `You are a specialized worker: ${task.worker_type}.`;
+    const _pUserId = task.userId || task.input_data?.userId || 'guest';
+    const _pPersona = (() => { try { return getPersona(_pUserId); } catch { return { role: 'executive', params: null }; } })();
+    let systemPrompt = applyToSystemPrompt(
+      `You are a specialized worker: ${task.worker_type}.`,
+      _pPersona.role,
+      _pPersona.params
+    );
+    try {
+      if (originalQuery) systemPrompt = await injectPushback(_pUserId, originalQuery, systemPrompt);
+    } catch (_pbErr) { /* pushback optional */ }
     let userPrompt = originalQuery;
 
     const deepResearchSelected = task.worker_type === 'research' && task.input_data?.deep_research === true;

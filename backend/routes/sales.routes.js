@@ -14,6 +14,8 @@
 const express = require('express');
 const crmService = require('../services/sales/crm.service');
 const { KimbaDnaService } = require('../services/sales/kimba-dna.service');
+const { LinkedInDnaService } = require('../services/sales/dna.linkedin.service');
+const { CvDnaService } = require('../services/sales/dna.cv.service');
 const { OutreachService } = require('../services/sales/outreach.service');
 const { CatalogService } = require('../services/sales/catalog.service');
 const { PricingEngine } = require('../services/sales/pricing.engine');
@@ -21,6 +23,8 @@ const router = express.Router();
 const catalog = new CatalogService();
 const pricing = new PricingEngine();
 const dna = new KimbaDnaService();
+const linkedin = new LinkedInDnaService();
+const cvService = new CvDnaService();
 const outreach = new OutreachService();
 
 router.get('/pipeline', (req, res) => { res.json(crmService.getPipelineStats()); });
@@ -68,6 +72,29 @@ router.post('/dna/style', (req, res) => {
 
 router.get('/dna/style', (req, res) => {
   res.json(dna.getStyleCalibration() || {});
+});
+
+router.post('/dna/linkedin/url', async (req, res) => {
+  try {
+    const result = await linkedin.importFromUrl(req.body.url);
+    res.json(result);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+router.post('/dna/linkedin/csv', (req, res) => {
+  try {
+    const result = linkedin.importFromCsv(req.body.filePath);
+    res.json(result);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+router.post('/dna/cv', async (req, res) => {
+  try {
+    const result = req.body.text
+      ? await cvService.importFromText(req.body.text)
+      : await cvService.importFromFile(req.body.filePath);
+    res.json(result);
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // Outreach-Routen
