@@ -2,6 +2,86 @@
 
 ---
 
+> ℹ️ **Versions-Widerspruch aufgelöst (Ingo, 2026-07-12):** Der scheinbare Konflikt zwischen
+> dieser Historie (bis v1.23.0, April 2026) und dem weiter unten stehenden v1.7.0-Eintrag
+> (Mai 2026) kam von einer früheren Trennung zwischen interner und externer Versionszählung.
+> **v1.23.0 ist die verbindliche aktuelle Version** — README-Badge und `docs/CURRENT_STATE.md`
+> entsprechend aktualisiert.
+
+## v1.23.0 — Autonomous Feature Intelligence (2026-04-22)
+
+- Scout + Analyzer + Proposer — KIMBA erkennt automatisch neue Feature-Möglichkeiten
+
+## v1.22.0 — Learned Routing (2026-04-22)
+
+- Outcome-Scorecard-basiertes Routing, lernt aus vergangenen Runs
+
+## v1.21.0 — Structured Handoff Protocol (2026-04-22)
+
+- Strukturierte Übergabeobjekte zwischen Runs (`/api/handoff/:runId`)
+
+## v1.20.0 — Governance Module (2026-04-22)
+
+- Policy Packs, Risk Tiers, Audit-Trail
+
+## v1.19.0 — Dynamic Roles + Tool Capability Discovery (2026-04-22)
+
+- Dynamische Agent-Rollen, automatische Tool-Fähigkeits-Erkennung
+
+## v1.18.0 — Session Recording + Replay (2026-04-22)
+
+- Vollständige Session-Aufzeichnung + Replay-Funktionalität
+- **Entfernt am 2026-07-12** (Sprint S1, Repo-Diät) — genuin verwaister Code, keine
+  Kern-Abhängigkeit, siehe [[project_kios_openclaw_pivot]]
+
+## v1.17.0 — Reflection Engine (2026-04-22)
+
+- Self-Critique-Loop, automatische Run-Bewertung + Learnings
+- **Bleibt aktiv** — bei der S1-Kill-Liste-Prüfung 2026-07-12 als echte Kernlogik bestätigt
+  (tief in `mesh.runtime.js` verwoben), nicht entfernt
+
+## v1.16.0 — Community Auth Route (2026-04-22)
+
+- SQLite + JWT Auth-Route
+- **Bleibt aktiv** — bei der S1-Prüfung 2026-07-12 als zentral in `core/app.js`/
+  `core/app.community.js` eingebunden bestätigt, Entfernungsversuch zurückgenommen
+
+## v1.15.0 — LanceDB Memory Sharing (2026-04-22)
+
+- `/api/swarm/brief` — fertiger Memory-Kontext für Team-Briefe
+
+## v1.14.1 — Mobile Quick Wins (2026-04-22)
+
+- History-Persistenz, Swipe-Hint, Dependency-Alerts
+
+## v1.14.0 — Python SDK (2026-04-22)
+
+- `pip install kios`
+- **Eingefroren seit 2026-07-12** (Sprint S1) — kein aktiver Support mehr, siehe README
+
+## v1.13.0 — Mobile Sprint 2 (2026-04-21)
+
+- Project Explorer, Memory Screen (LanceDB live)
+
+## v1.12.0 — Mobile App Sprint 1 (2026-04-21)
+
+- Avatar, Voice, Settings
+
+## v1.11.0 — Control Tower & LanceDB Swarm Memory (2026-04-21)
+
+- Control Tower + Event Bus
+- LanceDB Swarm Memory (semantische Suche)
+
+## v1.10.0 — A2A Protocol (2026-04-20)
+
+- Agent-to-Agent Interoperabilität, kompatibel mit Agentforce/CrewAI/LangGraph
+
+## v1.9.1 — LLM Smart Router + Circuit Breaker + Queue (2026-04-20)
+
+- Smart Router mit Circuit Breaker und Concurrency-Queue für LLM-Calls
+
+---
+
 ## v1.7.0 — A2A Base Protocol · KIMBA Intelligence CLI · Security (2026-05-18)
 
 ### New Features — Community (AGPL-3.0)

@@ -29,8 +29,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'excel',
     version: '1.0',
     description: 'Excel/Tabellen-Generierung, KPI-Reports, Datenanalyse in XLSX-Format',
-    preferred_models: ['gemini-3.1-pro', 'claude-sonnet-4-6', 'gpt-5.4'],
-    fallback_models: ['gemini-2.0-flash', 'deepseek-chat'],
+    preferred_models: ['gemini-3.1-pro', 'claude-sonnet-5', 'gpt-5.6-sol'],
+    fallback_models: ['gemini-3.6-flash', 'deepseek-chat'],
     capabilities: [
       'generate_file',         // XLSX-Dateien erzeugen
       'table_transform',       // Tabellen transformieren
@@ -57,8 +57,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'code',
     version: '1.0',
     description: 'Multi-File Code-Generierung, Refactoring, Dependency-Analyse',
-    preferred_models: ['claude-sonnet-4-6', 'gpt-5.4', 'deepseek-chat'],
-    fallback_models: ['gemini-2.0-flash', 'claude-haiku-4-5-20251001'],
+    preferred_models: ['claude-sonnet-5', 'gpt-5.6-sol', 'deepseek-chat'],
+    fallback_models: ['gemini-3.6-flash', 'claude-haiku-4-5-20251001'],
     capabilities: [
       'multi_file',            // Mehrere Dateien gleichzeitig
       'zip_output',            // ZIP-Archiv-Generierung
@@ -86,8 +86,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'pdf',
     version: '1.0',
     description: 'PDF-Verarbeitung: Lesen, Extrahieren, Zusammenfassen, Generieren',
-    preferred_models: ['claude-sonnet-4-6', 'gpt-5.4'],
-    fallback_models: ['gemini-3.1-pro', 'gemini-2.0-flash'],
+    preferred_models: ['claude-sonnet-5', 'gpt-5.6-sol'],
+    fallback_models: ['gemini-3.1-pro', 'gemini-3.6-flash'],
     capabilities: [
       'read_pdf',              // PDF einlesen
       'summarize',             // Zusammenfassen
@@ -116,8 +116,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'ppt',
     version: '1.0',
     description: 'PowerPoint-Präsentationen: Design, Outline-to-PPT, PPTX-Export',
-    preferred_models: ['claude-sonnet-4-6', 'gpt-5.4', 'gemini-3.1-pro'],
-    fallback_models: ['gemini-2.0-flash', 'claude-haiku-4-5-20251001'],
+    preferred_models: ['claude-sonnet-5', 'gpt-5.6-sol', 'gemini-3.1-pro'],
+    fallback_models: ['gemini-3.6-flash', 'claude-haiku-4-5-20251001'],
     capabilities: [
       'slide_design',          // Folien-Design
       'outline_to_ppt',        // Gliederung → PPT
@@ -145,8 +145,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'data',
     version: '1.0',
     description: 'Datenanalyse, CSV-Merge, Forecasting, Analytics',
-    preferred_models: ['gemini-3.1-pro', 'claude-sonnet-4-6', 'deepseek-chat'],
-    fallback_models: ['gemini-2.0-flash', 'deepseek-reasoner'],
+    preferred_models: ['gemini-3.1-pro', 'claude-sonnet-5', 'deepseek-chat'],
+    fallback_models: ['gemini-3.6-flash', 'deepseek-reasoner'],
     capabilities: [
       'csv_merge',             // CSV-Dateien zusammenführen
       'dataframe_ops',         // DataFrame-Operationen
@@ -174,8 +174,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'research',
     version: '1.0',
     description: 'Web-Recherche, Multi-Source-Suche, PDF-Suche, Zusammenfassungen',
-    preferred_models: ['gpt-5.4', 'claude-sonnet-4-6', 'gemini-3.1-pro'],
-    fallback_models: ['gemini-2.0-flash', 'claude-haiku-4-5-20251001'],
+    preferred_models: ['gpt-5.6-sol', 'claude-sonnet-5', 'gemini-3.1-pro'],
+    fallback_models: ['gemini-3.6-flash', 'claude-haiku-4-5-20251001'],
     capabilities: [
       'web_search',            // Web-Suche
       'pdf_search',            // PDF-Suche
@@ -203,8 +203,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'browser',
     version: '1.0',
     description: 'Browser-Automation: Navigieren, Extrahieren, Download (Claude Computer Use)',
-    preferred_models: ['claude-sonnet-4-6', 'gpt-5.4'],
-    fallback_models: ['claude-sonnet-4-6'],
+    preferred_models: ['claude-sonnet-5', 'gpt-5.6-sol'],
+    fallback_models: ['claude-sonnet-5'],
     capabilities: [
       'navigate',              // Seiten navigieren
       'extract',               // Inhalte extrahieren
@@ -232,8 +232,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'multi',
     version: '1.0',
     description: 'Multi-Worker-Orchestrierung, Verification, Tool-Selection',
-    preferred_models: ['gpt-5.4', 'claude-sonnet-4-6'],
-    fallback_models: ['gemini-2.0-flash', 'claude-haiku-4-5-20251001'],
+    preferred_models: ['gpt-5.6-sol', 'claude-sonnet-5'],
+    fallback_models: ['gemini-3.6-flash', 'claude-haiku-4-5-20251001'],
     capabilities: [
       'orchestrate_workers',   // Worker orchestrieren
       'verification',          // Ergebnisse verifizieren
@@ -261,8 +261,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'desktop',
     version: '1.0',
     description: 'Lokale Desktop-Beobachtung und kontrollierte Desktop-Aktionen',
-    preferred_models: ['gpt-5.4', 'claude-sonnet-4-6'],
-    fallback_models: ['gemini-2.0-flash'],
+    preferred_models: ['gpt-5.6-sol', 'claude-sonnet-5'],
+    fallback_models: ['gemini-3.6-flash'],
     capabilities: [
       'desktop_status',
       'desktop_observe',
@@ -287,8 +287,8 @@ const WORKER_DEFINITIONS = {
     worker_type: 'chat',
     version: '1.0',
     description: 'Standard-Chat ohne spezielle Worker-Funktionen',
-    preferred_models: ['gpt-5.4', 'claude-sonnet-4-6', 'gemini-3.1-pro'],
-    fallback_models: ['gemini-2.0-flash', 'deepseek-chat'],
+    preferred_models: ['gpt-5.6-sol', 'claude-sonnet-5', 'gemini-3.1-pro'],
+    fallback_models: ['gemini-3.6-flash', 'deepseek-chat'],
     capabilities: [
       'conversation',          // Normale Konversation
       'question_answering',    // Fragen beantworten

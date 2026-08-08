@@ -79,7 +79,7 @@ Ask Claude Code: *"Add a GET /version endpoint to app.community.js that returns 
 
 - **No TypeScript in backend** — all backend code is CommonJS JavaScript
 - **No Express router** — routing is handled via `if (path === ...)` chains in `app.community.js`
-- **Edition guard** — use `require('../blauer-elefant/edition.guard').isEnterprise()` for edition checks, never `process.env.KI_OS_EDITION`
+- **Edition guard** — use `require('../edition-guard/edition.guard').isEnterprise()` for edition checks, never `process.env.KI_OS_EDITION`
 - **Memory** — access via `require('../memory').createMemoryAdapter()`, not direct file I/O
 - **Logging** — use `require('../services/core/logger.service')`, not `console.log`
 - **Tests** — Jest, files in `tests/`, follow naming `*.test.js`
@@ -94,7 +94,7 @@ Example `CLAUDE.md`:
 ```markdown
 # KI-OS Development Guidelines
 
-- All edition checks: use isEnterprise() from blauer-elefant/edition.guard
+- All edition checks: use isEnterprise() from edition-guard/edition.guard
 - Never use the word "license" in filenames or comments
 - Backend: CommonJS only, no TypeScript
 - Logging: logger.service, not console.log

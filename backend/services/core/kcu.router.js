@@ -20,17 +20,17 @@ const OpenAI = require('../providers/openai.provider');
 const { resolveDynamicRoute } = require('../routing/dynamic-routing.service');
 const routingLog = require('./routing-decision.log');
 
-// Model Metadata — aktueller Stand 2026
+// Model Metadata — aktueller Stand 2026-07-26 (siehe reference_model_scorecard)
 const MODEL_META = {
     // OpenAI
-    'gpt-5.4': { cost_cpm: 2.5, p95_ms: 900 },
+    'gpt-5.6-sol': { cost_cpm: 5.0, p95_ms: 900 },
     // Anthropic
-    'claude-opus-4-6': { cost_cpm: 5.0, p95_ms: 3000 },
-    'claude-sonnet-4-6': { cost_cpm: 3.0, p95_ms: 1400 },
+    'claude-opus-5': { cost_cpm: 5.0, p95_ms: 3000 },
+    'claude-sonnet-5': { cost_cpm: 3.0, p95_ms: 1400 },
     'claude-haiku-4-5-20251001': { cost_cpm: 0.8, p95_ms: 700 },
     // Google
-    'gemini-3.1-pro': { cost_cpm: 1.5, p95_ms: 1000 },
-    'gemini-2.0-flash': { cost_cpm: 0.1, p95_ms: 300 },
+    'gemini-3.1-pro': { cost_cpm: 2.0, p95_ms: 1000 },
+    'gemini-3.6-flash': { cost_cpm: 1.5, p95_ms: 400 },
     'gemini-deep-research': { cost_cpm: 3.0, p95_ms: 120000 },
     // DeepSeek (günstig)
     'deepseek-chat': { cost_cpm: 0.2, p95_ms: 500 },
@@ -84,7 +84,7 @@ async function oneVoiceDecideDeepResearch(inputText) {
         return { deep_research: heuristic, reason: 'heuristic_no_openai', confidence: heuristic ? 0.6 : 0.55 };
     }
 
-    const model = process.env.ONEVOICE_DEEP_RESEARCH_ROUTER_MODEL || 'gemini-2.0-flash'; // günstigstes Modell für Routing-Klassifikation
+    const model = process.env.ONEVOICE_DEEP_RESEARCH_ROUTER_MODEL || 'gemini-3.6-flash'; // günstigstes Modell für Routing-Klassifikation
     const sys = `You are KIMBA ONE-VOICE ROUTER.
 Decide if a user query requires a LONG-RUNNING deep research agent (minutes, multi-step web reading) or standard research (seconds, normal web search summarization).
 

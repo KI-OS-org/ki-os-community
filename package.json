@@ -1,6 +1,6 @@
 {
   "name": "ki-os-community",
-  "version": "1.12.0",
+  "version": "1.23.0",
   "main": "index.js",
   "type": "commonjs",
   "engines": {
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@clickhouse/client": "^1.18.3",
-    "adm-zip": "^0.5.10",
+    "adm-zip": "^0.6.0",
     "axios": "^1.6.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",
@@ -27,14 +27,18 @@
     "dotenv": "^16.3.1",
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
-    "form-data": "^4.0.0",
+    "form-data": "^4.0.6",
+    "imapflow": "^1.4.3",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.1.1",
+    "mailparser": "^3.9.12",
+    "multer": "^2.2.0",
     "node-fetch": "^2.7.0",
+    "nodemailer": "^9.0.1",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.14.0",
     "pptxgenjs": "^3.12.0",
     "sqlite3": "^6.0.1",
+    "twilio": "^6.0.2",
     "uuid": "^14.0.0"
   },
   "scripts": {
@@ -53,10 +57,14 @@
     "test:regression": "node scripts/full-regression.js",
     "doctor:frontend": "node scripts/doctor.frontend.js",
     "doctor:full": "npm run doctor && npm run doctor:frontend",
-    "test:l2": "node --test tests/l2.trace-store.test.js tests/l2.memory-store.test.js tests/l2.files-store.test.js tests/l2.runtime-runs-create.routes.test.js tests/l2.explain.routes.test.js tests/l2.trust.routes.test.js tests/l2.files.routes.test.js tests/l2.memory.routes.test.js"
+    "test:l2": "node --test tests/l2.trace-store.test.js tests/l2.memory-store.test.js tests/l2.files-store.test.js tests/l2.runtime-runs-create.routes.test.js tests/l2.explain.routes.test.js tests/l2.trust.routes.test.js tests/l2.files.routes.test.js tests/l2.memory.routes.test.js",
+    "voice": "node scripts/voice-input.js",
+    "start:voice": "pm2 start ecosystem.mac.config.js --only kimba-voice",
+    "stop:voice": "pm2 stop kimba-voice"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1032.0",
+    "lumaai": "^1.19.1",
     "supertest": "^7.2.2"
   },
   "overrides": {
@@ -65,9 +73,29 @@
     "brace-expansion": ">=1.1.13",
     "yaml": ">=1.10.3",
     "uuid": "^14.0.0",
-    "postcss": ">=8.5.10",
+    "postcss": "npm:postcss@>=8.5.18",
+    "sharp": ">=0.35.0",
+    "next": {
+      "postcss": "npm:postcss@>=8.5.18",
+      "sharp": "npm:sharp@>=0.35.0"
+    },
+    "next-auth": {
+      "next": {
+        "postcss": "npm:postcss@>=8.5.18"
+      }
+    },
     "elliptic": "^6.6.1",
-    "hono": "^4.12.18"
+    "@storybook/nextjs": {
+      "elliptic": "^6.6.1"
+    },
+    "hono": ">=4.12.25",
+    "undici": ">=6.27.0",
+    "ws": ">=8.21.0",
+    "shell-quote": ">=1.8.4",
+    "tmp": ">=0.2.6",
+    "langsmith": ">=0.6.0",
+    "fast-uri": ">=3.1.4",
+    "esbuild": ">=0.28.1"
   },
   "edition": "community",
   "private": true

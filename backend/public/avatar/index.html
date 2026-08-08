@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- (c) 2026 KI-OS.org — AGPL Community Edition -->
+<!-- @desc KIMBA Desktop-Avatar (S2 Killer-Demo) — spielt vorhandene Kimba-Motion-Clips
+     aus KI-News-Room/heygen-motion je nach aktuellem Voice-Loop-Zustand ab. Kein
+     Echtzeit-Rendering, nur Umschalten zwischen vorproduzierten, geloopten Clips. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>KIMBA Avatar</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  video {
+    width: 320px;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 0 24px rgba(217, 70, 160, 0.45);
+    cursor: pointer;
+  }
+  video.stopped { filter: grayscale(1) brightness(0.5); }
+  #label {
+    position: fixed;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font: 12px -apple-system, sans-serif;
+    color: #d946a0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+</style>
+</head>
+<body>
+  <video id="avatar" autoplay muted loop playsinline></video>
+  <div id="label">idle</div>
+<script>
+  const CLIP_FOR_STATE = {
+    idle: 'clips/idle.mp4',
+    listening: 'clips/listening.mp4',
+    thinking: 'clips/thinking.mp4',
+    speaking: 'clips/speaking.mp4',
+  };
+  const video = document.getElementById('avatar');
+  const label = document.getElementById('label');
+  let currentState = null;
+  let running = false;
+  let toggling = false;
+
+  function setState(state) {
+    if (state === currentState) return;
+    currentState = state;
+    video.src = CLIP_FOR_STATE[state] || CLIP_FOR_STATE.idle;
+    video.play().catch(() => {});
+    label.textContent = running ? state : `${state} (aus)`;
+  }
+
+  async function poll() {
+    try {
+      const res = await fetch('avatar-state.json?t=' + Date.now(), { cache: 'no-store' });
+      const data = await res.json();
+      setState(data.state);
+    } catch (e) {
+      // Server kurz weg — Zustand einfach beibehalten
+    }
+  }
+
+  async function refreshRunningStatus() {
+    try {
+      const res = await fetch('/api/voice-loop/status', { cache: 'no-store' });
+      const data = await res.json();
+      running = data.running;
+      video.classList.toggle('stopped', !running);
+      label.textContent = running ? currentState : `${currentState} (aus)`;
+    } catch (e) { /* Server kurz weg */ }
+  }
+
+  video.addEventListener('click', async () => {
+    if (toggling) return;
+    toggling = true;
+    try {
+      const endpoint = running ? '/api/voice-loop/stop' : '/api/voice-loop/start';
+      const res = await fetch(endpoint, { method: 'POST' });
+      const data = await res.json();
+      running = data.running;
+      video.classList.toggle('stopped', !running);
+      label.textContent = running ? currentState : `${currentState} (aus)`;
+    } catch (e) { /* ignorieren, naechster Klick versucht es erneut */ }
+    finally { toggling = false; }
+  });
+
+  setState('idle');
+  refreshRunningStatus();
+  setInterval(poll, 500);
+  setInterval(refreshRunningStatus, 3000);
+</script>
+</body>
+</html>

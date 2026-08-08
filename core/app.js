@@ -94,6 +94,8 @@ function getServices() {
   return {
     a2a:               () => require('../backend/controllers/a2a.controller'),
     sales:             () => require('../backend/routes/sales.routes'),
+    mcpRegistry:       () => require('../backend/routes/mcp.registry.routes'),
+    dreaming:          () => require('../backend/services/kimba/dreaming.service'),
     handleChat:        () => require('../backend/services/chat.controller').handleChat,
     starter:           () => require('../backend/services/demo/demo.news.service'),
     handleMemory:      () => require('../backend/services/memory.controller').handleMemory,
@@ -241,6 +243,26 @@ function createApp() {
         const result = await services.a2a().handleA2aRequest(path, method, body, query);
         Observability.completeRequest(requestObs, { statusCode: result.statusCode });
         return { statusCode: result.statusCode, headers: { 'x-trace-id': traceId }, body: result.body };
+      }
+
+      if (path.startsWith('/mcp/registry')) {
+        const result = await services.mcpRegistry().handleMcpRegistryRequest(path, method, body, query);
+        Observability.completeRequest(requestObs, { statusCode: result.statusCode });
+        return { statusCode: result.statusCode, headers: { 'x-trace-id': traceId }, body: result.body };
+      }
+
+      if (path === '/api/kimba/dreaming/run' && method === 'POST') {
+        const svc = new (services.dreaming().DreamingService)();
+        const report = await svc.run();
+        Observability.completeRequest(requestObs, { statusCode: 200 });
+        return { statusCode: 200, headers: { 'x-trace-id': traceId }, body: report };
+      }
+
+      if (path === '/api/kimba/dreaming/report' && method === 'GET') {
+        const svc = new (services.dreaming().DreamingService)();
+        const report = svc.loadReport();
+        Observability.completeRequest(requestObs, { statusCode: report ? 200 : 404 });
+        return { statusCode: report ? 200 : 404, headers: { 'x-trace-id': traceId }, body: report || { error: 'No report available' } };
       }
 
       const res = { statusCode: 404, headers: { 'x-trace-id': traceId }, body: { error: 'Not Found', path, method } };
