@@ -155,7 +155,7 @@ KI-OS evaluates every prompt in real-time and routes it to the optimal model —
 | Model Failure Fallback System | SELF-HEALING |
 | Parallel Multi-Model Execution | SUPPORTED |
 
-**Flagship Fleet:** OpenAI GPT & o1 · Anthropic Claude · Google Gemini · DeepSeek V & R · Qwen Max · Meta Llama · Local / On-Premises (air-gapped)
+**Flagship Fleet:** OpenAI GPT · Anthropic Claude · Google Gemini · DeepSeek · Qwen · Meta Llama · Local / On-Premises (air-gapped)
 
 ---
 
@@ -825,7 +825,7 @@ Like Business — self-hosted by default. Optionally: managed hosting by KI-OS (
 | Collaboration (Jira, Slack, Teams) | ✅ Basic | ✅ Standard | ✅ Premium |
 | Automation Platforms | ✅ n8n (self-hosted) | ✅ n8n (self-hosted), Zapier, Make, Adobe Workfront, Microsoft Power Automate | ✅ n8n (self-hosted), Zapier, Make, Adobe Workfront, Microsoft Power Automate |
 | Social Media (Instagram, Facebook, TikTok, LinkedIn) | ❌ | ✅ Instagram, Facebook, TikTok, LinkedIn (all features) | ✅ Instagram, Facebook, TikTok, LinkedIn (all features + Ads Manager) |
-| E-Commerce Platforms | ❌ | ✅ Shopify, WooCommerce, Magento, PrestaShop, Shopware | ✅ Shopify, WooCommerce, Magento, PrestaShop, Shopware |
+| E-Commerce Platforms | ❌ | ✅ WooCommerce, Magento, PrestaShop, Shopware | ✅ Shopify, WooCommerce, Magento, PrestaShop, Shopware |
 | Payment Providers | ❌ | ✅ Stripe, PayPal, Square, Mollie, Adyen | ✅ Stripe, PayPal, Square, Mollie, Adyen |
 | Marketing Platforms | ❌ | ✅ Mailchimp, ActiveCampaign, HubSpot, Marketo, Pardot | ✅ Mailchimp, ActiveCampaign, HubSpot, Marketo, Pardot |
 | ERP Systems | ❌ | ✅ SAP, Oracle NetSuite | ✅ SAP, Oracle NetSuite |
