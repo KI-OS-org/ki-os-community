@@ -308,47 +308,47 @@ The EU AI Act framework is natively built-in but remains fully adaptable. KI-OS 
 
 ### 🎧 KIMBA Earpiece System (vP6–vP8)
 
-KIMBA hört passiv im Meeting mit, flüstert proaktive Hinweise per TTS (Aoede/Gemini) und erkennt Emotionen per Screenshot + Gemini Vision.
+KIMBA listens passively during meetings, whispers proactive hints via TTS (Aoede/Gemini) and detects emotions using screenshots + Gemini Vision.
 
-**Voraussetzungen (macOS):**
+**Requirements (macOS):**
 ```bash
-brew install ffmpeg          # Audio-Capture + Konvertierung
-npm install -g pm2           # Prozess-Manager für Auto-Start
-# BlackHole 2ch installieren: https://existential.audio/blackhole/
-# Systemeinstellungen → Datenschutz → Bildschirm- & Systemtonaufnahme → Terminal ✓
+brew install ffmpeg          # Audio capture + conversion
+npm install -g pm2           # Process manager for auto-start
+# Install BlackHole 2ch: https://existential.audio/blackhole/
+# System Settings → Privacy → Screen & System Audio Recording → Terminal ✓
 ```
 
 **Features:**
-- ✅ **VAD:** Whisper-Erkennung (-40 bis -25 dBFS), Sprachsegmentierung
-- ✅ **STT:** OpenAI Whisper für Transkription
-- ✅ **Opinion Engine:** Stilles Trigger-Wort `hmmm` → KIMBA analysiert Meeting und flüstert Meinung zurück (max. 12 Wörter)
-- ✅ **Emotion Observer:** Screenshot alle 20s + bei Audio-Signal → Gemini Vision erkennt Gemütszustände der Teilnehmer
-- ✅ **TTS:** Gemini 2.5 Flash + Aoede-Stimme — echtes Flüstern via `Say in a very quiet whisper...`-Prefix
-- ✅ **HARDRULE:** Audio-Isolation — KIMBA ist niemals im Meeting-Kanal hörbar (`OVERRIDABLE=false`)
+- ✅ **VAD:** Whisper detection (-40 to -25 dBFS), speech segmentation
+- ✅ **STT:** OpenAI Whisper for transcription
+- ✅ **Opinion Engine:** Silent trigger word `hmmm` → KIMBA analyzes the meeting and whispers its opinion back (max. 12 words)
+- ✅ **Emotion Observer:** Screenshot every 20s + on audio signal → Gemini Vision detects participants' emotional states
+- ✅ **TTS:** Gemini 2.5 Flash + Aoede voice — real whispering via `Say in a very quiet whisper...` prefix
+- ✅ **HARDRULE:** Audio isolation — KIMBA is never audible in the meeting channel (`OVERRIDABLE=false`)
 
 ### 🎙️ Wake Word Voice Loop (vJ3)
 
-Sage **„KIMBA"** — KIMBA hört zu, transkribiert, antwortet direkt per Sprache zurück.
+Say **“KIMBA”** — KIMBA listens, transcribes and answers you directly by voice.
 
 ```bash
-npm run voice               # Manuell starten
-pm2 start ecosystem.mac.config.js   # Mit KI-OS starten (Auto-Restart)
+npm run voice               # Start manually
+pm2 start ecosystem.mac.config.js   # Start with KI-OS (auto-restart)
 ```
 
-State Machine: `IDLE → WAKE_CHECK → RECORDING → TRANSCRIBING → KIMBA antwortet`
+State machine: `IDLE → WAKE_CHECK → RECORDING → TRANSCRIBING → KIMBA responds`
 
 ### 🖥️ Desktop Control (vD3)
 
 ```bash
-# macOS: Screen Recording Permission aktivieren
+# macOS: enable Screen Recording permission
 open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
-# Terminal hinzufügen → Schalter Ein
+# Add Terminal → toggle on
 ```
 
-- ✅ macOS Swift-Helper (kompiliert automatisch via `xcrun swiftc`)
-- ✅ Windows PowerShell-Adapter
-- ✅ Screenshot, Maus, Keyboard, App-Launch, Clipboard
-- ✅ `DESKTOP_CONTROL_ENABLED=true` in `.env` zum Aktivieren
+- ✅ macOS Swift helper (compiles automatically via `xcrun swiftc`)
+- ✅ Windows PowerShell adapter
+- ✅ Screenshot, mouse, keyboard, app launch, clipboard
+- ✅ `DESKTOP_CONTROL_ENABLED=true` in `.env` to enable
 
 ---
 
@@ -356,17 +356,17 @@ open "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapt
 
 ### 🔧 KIMBA Skills Registry (vJ3)
 
-`*.skill.js`-Dateien im `skills/`-Verzeichnis werden beim Start automatisch geladen und per Keyword oder Name aufrufbar:
+`*.skill.js` files in the `skills/` directory are loaded automatically at startup and can be invoked by keyword or name:
 
 ```bash
-GET  /api/skills              # alle Skills auflisten
+GET  /api/skills              # list all skills
 POST /api/skills/invoke       # { "name": "server-info" }
-POST /api/skills/invoke       # { "query": "wie viel RAM?" }  ← Freitext-Routing
+POST /api/skills/invoke       # { "query": "how much RAM?" }  ← free-text routing
 ```
 
 Built-in: `health-check` · `server-info` · `git-status` · `kimba-briefing`
 
-Eigener Skill: `skills/mein-skill.skill.js` mit `name`, `description`, `triggers[]`, `execute()` anlegen → wird automatisch registriert.
+Your own skill: create `skills/mein-skill.skill.js` with `name`, `description`, `triggers[]`, `execute()` → it is registered automatically.
 
 ### 🌐 External Skills API (vJ4)
 
@@ -377,15 +377,15 @@ GET  /api/skills/installed
 DELETE /api/skills/uninstall/:name
 ```
 
-Sicherheit: npm-Allowlist (`@ki-os/skill-*`), git-Domain-Whitelist (`SKILL_GIT_DOMAINS` env), 10s Timeout-Guard.
+Security: npm allowlist (`@ki-os/skill-*`), git domain whitelist (`SKILL_GIT_DOMAINS` env), 10s timeout guard.
 
 ### 🎙️ Energy-VAD Voice Loop (vV1)
 
-Der Voice Loop erkennt jetzt das echte Ende der Rede statt fixer 4s-Chunks.
+The voice loop now detects the actual end of speech instead of fixed 4s chunks.
 
-State Machine: `CAL → SIL → VOI → HLD`
-- 2s Kalibrierung → dynamischer Baseline-Pegel + 6 dB Threshold
-- Min. Sprachlänge 200ms (kein Zufalls-Trigger), Hold-off 300ms, Max 30s
+State machine: `CAL → SIL → VOI → HLD`
+- 2s calibration → dynamic baseline level + 6 dB threshold
+- Min. speech length 200ms (no accidental trigger), hold-off 300ms, max 30s
 
 ```bash
 node scripts/voice-loop.mjs --device 1
@@ -395,18 +395,18 @@ node scripts/voice-loop.mjs --device 1
 
 ```bash
 node scripts/capture-screenshots.mjs --out output/screenshots/snap.png
-node scripts/capture-screenshots.mjs --sequence scripts/seq.json     # Sequenz
+node scripts/capture-screenshots.mjs --sequence scripts/seq.json     # sequence
 node scripts/capture-screenshots.mjs --interval 3000 --count 5       # Timed
 CAPTURE_DISPLAY=2 node scripts/capture-screenshots.mjs --out s2.png  # Multi-Monitor
 ```
 
 ### 📱 Mobile App — 9 Screens (Business/Enterprise)
 
-Alle Screens jetzt im PagerView eingebunden:
+All screens are now integrated into the PagerView:
 
 `⚡ TOWER` · `◉ KIMBA` · `◈ DECK` · `▷ CMD` · `⊞ FILES` · `☰ LOG` · `◇ MEM` · `▶ DEMO` · `⚙ SYS`
 
-Swipe-Navigation horizontal, BottomNav zeigt Label nur beim aktiven Tab.
+Horizontal swipe navigation, BottomNav shows the label only for the active tab.
 
 ---
 
@@ -414,20 +414,20 @@ Swipe-Navigation horizontal, BottomNav zeigt Label nur beim aktiven Tab.
 
 ### 💬 Discord Bridge (vJ1)
 
-KIMBA lebt als vollwertiges Discord-Mitglied — freier Chat, Slash Commands, Datei-Zugriff und Shell-Ausführung direkt aus Discord.
+KIMBA lives as a full-fledged Discord member — free-form chat, slash commands, file access, and shell execution directly from Discord.
 
 ```bash
-# Slash Commands (überall im Server)
-/claude <frage>     # KIMBA via Claude Code CLI
-/codex  <frage>     # KIMBA via OpenAI Codex
-/qwen   <frage>     # KIMBA via Qwen3
+# Slash commands (anywhere in the server)
+/claude <question>     # KIMBA via Claude Code CLI
+/codex  <question>     # KIMBA via OpenAI Codex
+/qwen   <question>     # KIMBA via Qwen3
 
-# Freier Chat: @KIMBA wie ein Teammitglied ansprechen
-# Tools: read_file, run_command (Shell-Zugriff auf den Mac)
+# Free-form chat: address @KIMBA like a team member
+# Tools: read_file, run_command (shell access to the Mac)
 ```
 
-Voraussetzungen: `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` in `.env`.
-Auto-Start: LaunchAgent `org.ki-os.discord` (macOS).
+Requirements: `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` in `.env`.
+Auto-start: LaunchAgent `org.ki-os.discord` (macOS).
 
 ### 📱 Telegram Bridge (vJ1)
 
@@ -437,25 +437,25 @@ Auto-Start: LaunchAgent `org.ki-os.discord` (macOS).
 !qwen    <frage>    # Qwen via Telegram
 ```
 
-KIMBA sendet automatisch Morning Briefing (08:00) und Abend-Report (19:00) via Telegram.
-Voraussetzung: `TELEGRAM_BOT_TOKEN` in `.env`.
+KIMBA automatically sends a morning briefing (08:00) and an evening report (19:00) via Telegram.
+Requirement: `TELEGRAM_BOT_TOKEN` in `.env`.
 
 ### 💬 WhatsApp Integration
 
-Zwei Kanäle parallel:
-- **Twilio Inbound** (`POST /api/whatsapp/inbound`) — eingehende Nachrichten als Mission-Seeds
-- **Meta Cloud API** (`GET /api/whatsapp/meta/verify` + `POST /api/whatsapp/meta/inbound`) — kein Twilio nötig
+Two channels in parallel:
+- **Twilio Inbound** (`POST /api/whatsapp/inbound`) — incoming messages as mission seeds
+- **Meta Cloud API** (`GET /api/whatsapp/meta/verify` + `POST /api/whatsapp/meta/inbound`) — no Twilio required
 
-Voraussetzungen: `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN` (Twilio) oder `WHATSAPP_META_TOKEN`/`WHATSAPP_PHONE_ID` (Meta).
+Requirements: `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN` (Twilio) or `WHATSAPP_META_TOKEN`/`WHATSAPP_PHONE_ID` (Meta).
 
 ### 🎤 Voice Cloning (vVOICE-4)
 
-KIMBA spricht in der Stimme des Nutzers — Stimme einmal enrollen, dann alle Antworten in dieser Stimme.
+KIMBA speaks in the user's voice — enroll your voice once, then all responses come back in that voice.
 
 ```bash
 # CLI
-kios voice-clone enroll --file meine-stimme.wav --user ingo
-kios voice-clone say "Guten Morgen, hier ist KIMBA" --play
+kios voice-clone enroll --file my-voice.wav --user ingo
+kios voice-clone say "Good morning, this is KIMBA" --play
 kios voice-clone list
 kios voice-clone delete --user ingo
 
@@ -466,131 +466,127 @@ POST /api/voice-clone/synthesize   { userId, text }
 
 ### 🌐 OpenAPI-to-MCP Bridge (vMCP-1)
 
-Jede REST-API wird automatisch zum KIMBA-Tool — OpenAPI-Spec einreichen, sofort als MCP-Tool verfügbar.
+Every REST API automatically becomes a KIMBA tool — submit an OpenAPI spec and it is instantly available as an MCP tool.
 
 ```bash
 POST /mcp/bridge/register   { id: "my-api", spec: { openapi: "3.0", ... } }
-GET  /mcp/bridge/tools      # alle registrierten Tools
+GET  /mcp/bridge/tools      # all registered tools
 POST /mcp/bridge/execute    { toolId, input }
-GET  /mcp/bridge/specs      # alle registrierten Specs
+GET  /mcp/bridge/specs      # all registered specs
 DELETE /mcp/bridge/spec/:id
 ```
 
 ### 🏢 Agent 365 (vA365-3)
 
-KIMBA als Microsoft Teams/Outlook/Word Teammitglied — per @Mention erreichbar.
+KIMBA as a Microsoft Teams/Outlook/Word team member — reachable via @mention.
 
 ```bash
-POST /api/agent365/message    # Teams/Outlook Webhook-Eingang
-GET  /api/agent365/manifest   # Agent-Manifest für Microsoft Azure Bot
+POST /api/agent365/message    # Teams/Outlook webhook inbound
+GET  /api/agent365/manifest   # Agent manifest for Microsoft Azure Bot
 GET  /api/agent365/status
-```
-
-Voraussetzung: `AGENT365_WEBHOOK_SECRET` in `.env` + Azure Bot-Registrierung.
+```Prerequisite: `AGENT365_WEBHOOK_SECRET` in `.env` + Azure bot registration.
 
 ### 🎵 Audio Cache & Voice Library (vA1/vA2)
 
-- **vA1**: Semantischer TTS-Cache — generierte Audio-Fragmente werden wiederverwendet statt neu synthetisiert
-- **vA2**: 216 MP3s in 8 KIMBA-Charakteren (synthesizer, supervisor, planner, execution, research, reviewer, memory, policy) für sofortige Offline-Wiedergabe
+- **vA1**: Semantic TTS cache — generated audio fragments are reused instead of being re-synthesized
+- **vA2**: 216 MP3s across 8 KIMBA characters (synthesizer, supervisor, planner, execution, research, reviewer, memory, policy) for instant offline playback
 
 ```bash
-GET  /api/audio-cache/lookup?text=...    # Cache-Treffer prüfen
-POST /api/audio-cache/store              # Neue Phrase cachen
-GET  /api/audio-cache/stats              # Cache-Statistiken
+GET  /api/audio-cache/lookup?text=...    # check cache hit
+POST /api/audio-cache/store              # cache new phrase
+GET  /api/audio-cache/stats              # cache statistics
 ```
 
 ### 🌙 KIMBA Dreaming
 
-Täglich um 03:00 Uhr analysiert KIMBA autonom die Session-Handoffs und Swarm-Memory der letzten 24h und erstellt einen strategischen Nacht-Report.
+Every day at 03:00, KIMBA autonomously analyzes the session handoffs and swarm memory of the last 24 hours and produces a strategic night report.
 
 ```bash
-POST /api/kimba/dreaming/run       # Manuell starten
-GET  /api/kimba/dreaming/report    # Letzten Report abrufen
+POST /api/kimba/dreaming/run       # Start manually
+GET  /api/kimba/dreaming/report    # retrieve last report
 ```
 
-Report wird in `.tmp/dreaming-report.json` gespeichert und kann per Telegram abgerufen werden.
+The report is stored in `.tmp/dreaming-report.json` and can be retrieved via Telegram.
 
 ### 🧠 KIMBA Intelligence (vK1)
 
-KIMBA lernt Ingo's Arbeitsweise kontinuierlich und injiziert Nutzer-Kontext automatisch in jede Mission.
+KIMBA continuously learns Ingo's way of working and automatically injects user context into every mission.
 
-- **UserProfile**: Rolle, Präferenzen, Sprache, Arbeitszeiten
-- **PatternAnalyst**: Erkennt wiederkehrende Aufgaben und schlägt Automatisierungen vor
-- **UserContext-Injection**: Alle Modelle im Team kennen den Nutzer-Kontext ohne explizite Übergabe
+- **UserProfile**: Role, preferences, language, working hours
+- **PatternAnalyst**: Detects recurring tasks and suggests automations
+- **UserContext injection**: Every model on the team knows the user context without explicit handover
 
 ```bash
-kios analyze              # FRIDAY-Analyse manuell auslösen
+kios analyze              # manually trigger FRIDAY analysis
 GET /api/intelligence/profile
 GET /api/intelligence/patterns
 ```
 
 ### 🎭 Mood-aware TTS (Earpiece)
 
-KIMBA flüstert Antworten im Ton des Gesprächsmoments — nicht immer gleich laut und sachlich.
+KIMBA whispers answers in the tone of the conversational moment — not always at the same volume and matter-of-fact.
 
-| Mood | Emotion | Beispiel |
+| Mood | Emotion | Example |
 |------|---------|---------|
-| `ALERT` | dringend | „Achtung — der Kunde fragt nach dem Budget" |
-| `CALM` | ruhig | „Alles läuft wie geplant" |
-| `CURIOUS` | neugierig | „Interessant — das kenne ich noch nicht" |
-| `EXCITED` | enthusiastisch | „Das ist ein Durchbruch!" |
+| `ALERT` | urgent | "Heads up — the client is asking about the budget" |
+| `CALM` | calm | "Everything is running as planned" |
+| `CURIOUS` | curious | "Interesting — that's new to me" |
+| `EXCITED` | enthusiastic | "This is a breakthrough!" |
 
-Konfiguration: `MOOD_INTENSITY=0.8` in `.env`.
+Configuration: `MOOD_INTENSITY=0.8` in `.env`.
 
 ### 🧩 Ambient Sales Intelligence (vC0)
 
-Autonomer Hintergrund-Vertrieb — KIMBA analysiert kontinuierlich CRM-Pipeline und stößt Outreach an.
+Autonomous background sales — KIMBA continuously analyzes the CRM pipeline and initiates outreach.
 
 ```bash
-kios sales pipeline           # Pipeline-Übersicht
-kios sales contacts           # Kontakt-Liste
-kios sales dispatch           # Outreach versenden
+kios sales pipeline           # pipeline overview
+kios sales contacts           # contact list
+kios sales dispatch           # send outreach
 
 GET  /api/sales/pipeline
 GET  /api/sales/contacts
 POST /api/sales/contacts
-POST /api/sales/dna/profile   # KIMBA-DNA importieren
-POST /api/sales/dispatch      # Outreach via Kanal versenden
+POST /api/sales/dna/profile   # import KIMBA DNA
+POST /api/sales/dispatch      # send outreach via channel
 ```
 
 ### 🖥️ VSCode Extension (IDE 1-5)
 
-KI-OS direkt in VS Code — Mission-Tree, Budget-Statusleiste, Echtzeit-Streaming.
+KI-OS right inside VS Code — mission tree, budget status bar, real-time streaming.
 
-- **AgentTreeProvider**: Live-Ansicht aller laufenden Agents in der Sidebar
-- **BudgetStatusBar**: Echtzeit-Kostenanzeige in der Statusleiste
-- **MissionWebview**: Streaming-Panel neben dem Editor
-- **Effizienz-Report**: Multi-Model vs. Solo nach Mission-Abschluss
+- **AgentTreeProvider**: Live view of all running agents in the sidebar
+- **BudgetStatusBar**: Real-time cost display in the status bar
+- **MissionWebview**: Streaming panel next to the editor
+- **Efficiency report**: Multi-model vs. solo after mission completion
 
 ```bash
-# Lokal installieren (VSIX)
+# Install locally (VSIX)
 code --install-extension ki-os-2.0.0.vsix
 ```
 
-### 🖥️ CLI — Vollständige Command-Übersicht
+### 🖥️ CLI — Complete Command Overview
 
 ```bash
-kios meeting start            # Earpiece Meeting-Modus starten
-kios meeting end              # Meeting beenden
-kios meeting status           # Meeting-Status + Emotionen
-kios voice-clone enroll       # Stimme enrollen
-kios voice-clone say <text>   # In eigener Stimme sprechen
-kios analyze                  # FRIDAY Pattern-Analyse
+kios meeting start            # start Earpiece meeting mode
+kios meeting end              # end meeting
+kios meeting status           # meeting status + emotions
+kios voice-clone enroll       # enroll voice
+kios voice-clone say <text>   # speak in your own voice
+kios analyze                  # FRIDAY pattern analysis
 kios search <query>           # Web-Suche via Tavily
-kios plan <ziel>              # Ghost-Plan erstellen
+kios plan <goal>              # create Ghost plan
 kios sales pipeline           # CRM-Pipeline
-kios skill list               # Skill-Registry anzeigen
-kios ghost <plan>             # Ghost Control starten
-kios efficiency               # Effizienz-Report
-```
-
----
+kios skill list               # show skill registry
+kios ghost <plan>             # start Ghost Control
+kios efficiency               # efficiency report
+```---
 
 ## ClawHub, Channel Parity, SkillForge & Timeline *(v1.23.0)*
 
-### 🔥 ClawHub-Kompatibilitäts-Layer
+### 🔥 ClawHub Compatibility Layer
 
-Importiert Skills im OpenClaw-Format (SKILL.md mit Frontmatter oder openclaw.plugin.json). Vor Installation und Ausführung erfolgen Security-Scan und Permission-Risiko-Bewertung (grün/gelb/rot). Rot-Skills werden nicht installiert. Ausführung in Docker-Sandbox ohne Netzwerkzugriff, Read-Only-Filesystem und Ressourcenlimits.
+Imports skills in the OpenClaw format (SKILL.md with frontmatter or openclaw.plugin.json). Before installation and execution, a security scan and permission risk assessment (green/yellow/red) are performed. Red-rated skills are not installed. Execution takes place in a Docker sandbox with no network access, a read-only filesystem and resource limits.
 
 ```bash
 kios claw scan ./mein-claw/
@@ -608,17 +604,17 @@ GET  /api/claws/docker-status
 POST /api/claws/run/:name
 ```
 
-Sicherheit: Vor jeder Ausführung erneuter Scan, Sandbox mit `--network=none`, `--cap-drop=ALL`, Memory/CPU/PID-Limits.
+Security: a fresh scan before every execution, sandbox with `--network=none`, `--cap-drop=ALL`, memory/CPU/PID limits.
 
-### 💬 Channel-Parität — Signal & iMessage
+### 💬 Channel Parity — Signal & iMessage
 
-Ergänzt bestehende Bridges um Signal (via signal-cli) und iMessage (AppleScript + macOS Messages). Beide sind Single-User-Gate. Nachrichten von nicht autorisierten Kontakten werden ignoriert.
+Extends the existing bridges with Signal (via signal-cli) and iMessage (AppleScript + macOS Messages). Both are single-user gated. Messages from unauthorized contacts are ignored.
 
 ```bash
 kios channel add signal
 kios channel start signal
 kios channel status
-kios channel send signal +49123456789 "Nachricht"
+kios channel send signal +49123456789 "message"
 ```
 
 ```bash
@@ -628,15 +624,15 @@ POST /api/channels/:name/stop
 POST /api/channels/:name/send
 ```
 
-### 🧠 SkillForge — Selbstlernende Skills
+### 🧠 SkillForge — Self-Learning Skills
 
-Protokolliert Team-Tasks und erkennt wiederkehrende Tool-Sequenzen. Ab 3 Wiederholungen wird ein wiederverwendbarer Skill vorgeschlagen. Vorschläge erfordern manuelle Freigabe. Optional mit LLM-Verbesserung, immer mit deterministischem Fallback.
+Logs team tasks and detects recurring tool sequences. After 3 repetitions, a reusable skill is proposed. Proposals require manual approval. Optional LLM enhancement, always with a deterministic fallback.
 
 ```bash
 kios skillforge scan
 kios skillforge proposals
-kios skillforge approve skill-vorschlag-123
-kios skillforge reject skill-vorschlag-123
+kios skillforge approve skill-proposal-123
+kios skillforge reject skill-proposal-123
 ```
 
 ```bash
@@ -645,13 +641,13 @@ GET  /api/skillforge/proposals
 POST /api/skillforge/proposals/:id/approve
 ```
 
-### 📜 Timeline — Durchsuchbare Bildschirm-Historie
+### 📜 Timeline — Searchable Screen History
 
-Erweitert Screen-Watch um eine durchsuchbare Historie (NDJSON, optional LanceDB). Privacy-First: App-Blacklist standardmäßig aktiv. Einträge können zeitbasiert gelöscht werden.
+Extends Screen Watch with a searchable history (NDJSON, optionally LanceDB). Privacy-first: the app blacklist is enabled by default. Entries can be deleted by time range.
 
 ```bash
 kios timeline recent
-kios timeline search "Fehlermeldung gestern"
+kios timeline search "error message yesterday"
 kios timeline blacklist
 kios timeline delete --from 2025-04-01 --to 2025-04-02
 ```
@@ -661,63 +657,61 @@ GET  /api/timeline/recent
 GET  /api/timeline/search
 POST /api/timeline/blacklist/add
 POST /api/timeline/delete-range
-```
+```---
 
----
+## Agent Runtime — Hierarchical Teams, Browser Automation & Auto-Learning
 
-## Agent-Runtime — Hierarchische Teams, Browser-Automation & Auto-Learning
-
-**Hierarchische Teams, Browser-Automation & Auto-Learning**
+**Hierarchical teams, browser automation & auto-learning**
 
 ### 🌐 Browser-Use Tool (Playwright + Firecrawl)
 
-**Autonome Browser-Interaktion für KI-Agenten.**
+**Autonomous browser interaction for AI agents.**
 
-KI-OS kann jetzt Webseiten öffnen, navigieren, klicken, Text eingeben, Screenshots machen und Inhalte scrapen. Vollständig integriert mit Firecrawl für Web-Suche und Scraping.
+KI-OS can now open web pages, navigate, click, enter text, take screenshots, and scrape content. Fully integrated with Firecrawl for web search and scraping.
 
 **Features:**
-- ✅ **8 Browser-Tools:** `navigate`, `click`, `fill`, `screenshot`, `scroll`, `wait`, `scrape`, `search`
-- ✅ **Security:** Domain-Allowlist, Rate-Limiting (10/Min), Timeout (30s)
-- ✅ **Privacy:** Audit-Redaction für sensible Daten
-- ✅ **Firecrawl-Integration:** Web-Scraping und Websuche
-- ✅ **Graceful Shutdown:** Cleanup-Hooks bei Server-Stop
+- ✅ **8 browser tools:** `navigate`, `click`, `fill`, `screenshot`, `scroll`, `wait`, `scrape`, `search`
+- ✅ **Security:** domain allowlist, rate limiting (10/min), timeout (30s)
+- ✅ **Privacy:** audit redaction for sensitive data
+- ✅ **Firecrawl integration:** web scraping and web search
+- ✅ **Graceful shutdown:** cleanup hooks on server stop
 
-**Use-Cases:**
-- Wettbewerbsanalyse (Preise scrapen)
-- Formular-Ausfüllen (Automatisierte Anmeldungen)
-- Screenshot-Dokumentation (Compliance)
-- Web-Research (Über einfache Suche hinaus)
+**Use cases:**
+- Competitive analysis (scraping prices)
+- Form filling (automated sign-ups)
+- Screenshot documentation (compliance)
+- Web research (beyond simple search)
 
 ```bash
 # Installation
 npm install playwright
 npx playwright install chromium
 
-# .env (optional für Scraping)
+# .env (optional, for scraping)
 FIRECRAWL_API_KEY=fc_xxx
 ```
 
 ---
 
-### 🧠 Reflection-Engine (Auto-Optimization)
+### 🧠 Reflection Engine (Auto-Optimization)
 
-**Automatische Selbst-Optimierung nach jedem Agent-Run.**
+**Automatic self-optimization after every agent run.**
 
-KI-OS bewertet jetzt automatisch jeden Run und generiert Learnings für zukünftige Tasks. Das System lernt kontinuierlich dazu und wird mit jeder Ausführung besser.
+KI-OS now automatically evaluates every run and generates learnings for future tasks. The system continuously learns and gets better with every execution.
 
 **Features:**
-- ✅ **Scorecard:** Quality (0.4), Cost (0.2), Latency (0.2), Tool-Choice (0.2)
-- ✅ **LLM-basierte Reflection:** "Was gut? Was schlecht? Nächste Zeit besser!"
-- ✅ **Swarm Memory Integration:** Learnings automatisch speichern
-- ✅ **API-Endpoints:** `/api/reflection/evaluate`, `/api/reflection/learnings`, `/api/reflection/stats`
-- ✅ **AgentMesh-Integration:** Automatisch nach jedem Run
+- ✅ **Scorecard:** quality (0.4), cost (0.2), latency (0.2), tool choice (0.2)
+- ✅ **LLM-based reflection:** "What went well? What went badly? Do better next time!"
+- ✅ **Swarm Memory integration:** learnings stored automatically
+- ✅ **API endpoints:** `/api/reflection/evaluate`, `/api/reflection/learnings`, `/api/reflection/stats`
+- ✅ **AgentMesh integration:** automatically after every run
 
-**Learning-Format:**
+**Learning format:**
 ```json
 {
-  "whatWorked": ["Web-Suche war präzise", "Memory-Recall relevant"],
-  "whatFailed": ["Provider-Wahl zu teuer"],
-  "nextTime": ["Verwende Qwen für ähnliche Tasks"],
+  "whatWorked": ["Web search was precise", "Memory recall was relevant"],
+  "whatFailed": ["Provider choice too expensive"],
+  "nextTime": ["Use Qwen for similar tasks"],
   "savedCosts": 0.50,
   "improvedLatency": 2000
 }
@@ -727,31 +721,31 @@ KI-OS bewertet jetzt automatisch jeden Run und generiert Learnings für zukünft
 
 ### 👥 Hierarchical Agents (Manager/Worker/Specialist)
 
-**Team-basierte Agent-Architektur für komplexe Tasks.**
+**Team-based agent architecture for complex tasks.**
 
-Statt einzelner Agenten arbeitet jetzt ein ganzes Team: Manager plant und delegiert, Worker führen aus, Specialists bringen Domain-Expertise ein.
+Instead of individual agents, an entire team now works together: the manager plans and delegates, workers execute, and specialists contribute domain expertise.
 
-**Rollen:**
-- ✅ **MANAGER:** Empfängt Task, plant Subtasks, delegiert, synthetisiert Ergebnis
-- ✅ **WORKER:** Führt generische Tasks aus (günstig, schnell)
-- ✅ **SPECIALIST:** Domain-Experte (research, coding, writing, review)
+**Roles:**
+- ✅ **MANAGER:** receives the task, plans subtasks, delegates, synthesizes the result
+- ✅ **WORKER:** executes generic tasks (cheap, fast)
+- ✅ **SPECIALIST:** domain expert (research, coding, writing, review)
 
-**Bidding-System:**
-- Worker bieten auf Tasks (Kosten vs. Qualität)
-- Economic Router entscheidet basierend auf Score
-- Winner nimmt Task
+**Bidding system:**
+- Workers bid on tasks (cost vs. quality)
+- The Economic Router decides based on score
+- The winner takes the task
 
 **API:**
 ```bash
-POST /api/hierarchical/run      # Run starten
-GET  /api/hierarchical/teams    # Verfügbare Teams
-GET  /api/hierarchical/stats    # Team-Statistiken
+POST /api/hierarchical/run      # start run
+GET  /api/hierarchical/teams    # available teams
+GET  /api/hierarchical/stats    # team statistics
 ```
 
-**Use-Cases:**
-- Marketing-Plan erstellen (Researcher + Writer + Reviewer)
-- Code-Review (Coder + Reviewer + Tester)
-- Data-Analysis (Analyst + Visualizer + Presenter)
+**Use cases:**
+- Creating a marketing plan (researcher + writer + reviewer)
+- Code review (coder + reviewer + tester)
+- Data analysis (analyst + visualizer + presenter)
 
 ---
 
