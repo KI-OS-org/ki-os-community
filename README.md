@@ -16,6 +16,8 @@ We do not integrate AI tools. We are the sovereign system that runs them.</p>
 
 [Website](https://ki-os.org) · [Live Demo](https://ki-os.org) · [Documentation](docs/COMMUNITY_API.md) · [Contact Sales](mailto:enterprise@ki-os.org) · [The Book](https://ki-os.org/book.html)
 
+**▶ Watch the trailer:** [Deutsch](https://youtu.be/nv33YsYw9Lo) · [English](https://youtu.be/iTdKsJ9g-K4)
+
 </div>
 
 ---
